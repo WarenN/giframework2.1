@@ -6,5 +6,6 @@ $giOutput->setTitle('giFramework 2');
 	giFramework 2
 </h1>
 <p style="text-align:center;color:#999999;font-family:arial;">
-	It seems to be working !
+	It seems to be working !<br />
+	<img src="https://raw.githubusercontent.com/AnnoyingTechnology/giframework2/master/giFramework2.jpg" style="width: 80%;" />
 </p>

@@ -35,7 +35,7 @@ $giConfiguration = array(
 	'configLoginUrl'			=> '/identification/', 	// page de login
 	'configLogoutUrl'			=> '/identification/', 	// page de sortie
 	'configHomeUrl'				=> '/administration/', 	// page d'entrée
-	'config404'					=> '/404.html',			// page non trouvée
+	'config404Url'				=> '/404-not-found.html',			// page non trouvée
 	
 	// environment specific options
 	'dev'			=> array(

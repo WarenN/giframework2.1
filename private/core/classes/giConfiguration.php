@@ -104,7 +104,7 @@ class giConfiguration {
 	}
 	
 	public function get404Page() {
-		return($this->Configuration['config404']);	
+		return($this->Configuration['config404Url']);	
 	}
 
 	public function getEnvironment() {

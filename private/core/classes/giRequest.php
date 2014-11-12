@@ -265,10 +265,23 @@ class giRequest {
 			ob_get_clean();
 			// output a 404 header
 			header('HTTP/1.1 404 Not Found');
-			// redirect to the 404 page
-			header('Location: '.$giConfiguration->get404Page());
-			// stop execution
-			die();
+			// if even the 404 handler is not found !
+			if($this->rawRequest == $giConfiguration->get404Page()) {
+				// stop completely
+				global $giLogger;
+				// log this
+				$giLogger->error('missing 404 handler '.$giConfiguration->get404Page());
+				// access giOutput
+				global $giOutput;
+				// output an error
+				$giOutput->error500('giRequest: missing_404_handler');
+			}
+			// set the 404 url as a request
+			$this->rawRequest = $giConfiguration->get404Page();
+			// re-process the request
+			$this->processRequest();
+			// stop here
+			return;
 		}
 		
 	}
