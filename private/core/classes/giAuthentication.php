@@ -34,7 +34,7 @@ Table structure definition
 	-	failures_expiration_date	(integer)	16		the failed login release date
 	-	last_login_date				(integer)	16		the last time account has been opened
 	-	last_login_ip				(string)	16		the last ip used on this account
-	-	modules_array				(string)	1024	the serialized modules array
+	-	rights_array				(string)	1024	the serialized modules array
 	-	data_array					(string)	1024	the serialized user's data
 	
 	
@@ -427,29 +427,15 @@ class giAuthentication implements iAuthentication {
 	
 	// kills the application with a shutdown message and logs/report if needed
 	private function lockDown($aShutdownReason,$report=false) {
-	
-		/*
-		
-		// access the logger
-		global $giLogger;
-		// log this
-		$giLogger->info('message');
-		
+
+		// access the output handler
 		global $giOutput;
-		$giOutput->setType('text');
-		$giOutput->setContent(giStringFor($aShutdownReason));
-		$giOutput->output();
 		
-		*/
-
-		// output the proper header
-		header("HTTP/1.0 403 Forbidden");
-
-		// output another header
-		header('Content-type: text/plain');
-
-		// die with the reason
-		die(giStringFor($aShutdownReason));
+		// set the type
+		$giOutput->setType('text');
+		
+		// output the error
+		$giOutput->error403($aShutdownReason);
 	
 	}
 
@@ -547,37 +533,17 @@ class giAuthentication implements iAuthentication {
 				// lockdown
 				$this->lockDown('account_has_expired');
 			}
-			// if the user reached the maximum number of failed login atempts
-			if($foundAccount->get('failures_count') >= $this->configBanTolerance) {
-				// if the ban has not expired yet
-				if($foundAccount->getRaw('failures_expiration_date') >= $this->configCurrentTime) {
-					// user is still banned so we reban for ten times the duration of a normal ban
-					$failures_expiration_date = (integer) $this->configCurrentTime + $this->configBanLifetime * 60 * 10;
-					// update the database entry
-					$foundAccount->set('failures_expiration_date',$failures_expiration_date);
-					// save the user
-					$foundAccount->save();
-					// access the logger
-					global $giLogger;
-					// log this
-					$giLogger->security('user_forces_ban');
-					// we stop the login process
-					$this->lockDown('user_forces_ban',true);
-				}
-				// the ban has expired
-				else {
-					// access the logger
-					global $giLogger;
-					// log this
-					$giLogger->security('ban_expired');
-					// we clean the ban entries
-					$foundAccount->set('failures_expiration_date','');
-					$foundAccount->set('failures_count',0);
-					// save the user
-					$foundAccount->save();
-				}
+			// if the account has been forced by the same person in the last x seconds
+			if($foundAccount->getRaw('last_failure_origin') == $_SERVER['REMOTE_ADDR'] and $foundAccount->getRaw('last_failure_date') and 
+			($foundAccount->getRaw('last_failure_date') + 30 > $this->configCurrentTime)) {
+				// access the gioutput
+				global $giOutput;
+				// redirect to the login page after a few second
+				$giOutput->redirectAfter($this->configLoginUrl,3);
+				// output a 403 header
+				$giOutput->error403('please_wait_a_moment_before_trying_again');
 			}
-			
+
 			// if the password matchs
 			if($foundAccount->get('password') == $this->getChecksum($postedPassword)) {
 				// generate session expiration date
@@ -591,7 +557,7 @@ class giAuthentication implements iAuthentication {
 				$this->authLogin		= (string)	$foundAccount->get('login');
 				$this->authLevel 		= (integer)	$foundAccount->get('id_level');
 				$this->authExpiration	= (integer)	$session_expiration_date;
-				$this->authModules 		= (array)	$foundAccount->get('modules_array');
+				$this->authModules 		= (array)	$foundAccount->get('rights_array');
 				// set cookies
 				setcookie($this->configLoginCookie,$this->getChecksum($foundAccount->get('login')),$session_expiration_date,'/');
 				setcookie($this->configPasswordCookie,$this->getChecksum($foundAccount->get('password')),$session_expiration_date,'/');
@@ -599,8 +565,7 @@ class giAuthentication implements iAuthentication {
 				// insert the session signature and session expiration
 				$foundAccount->set('session_key',$session_key);
 				$foundAccount->set('session_expiration_date',$session_expiration_date);
-				$foundAccount->set('failures_count',0);
-				$foundAccount->set('failures_expiration_date',null);
+				$foundAccount->set('last_login_agent',$_SERVER['HTTP_USER_AGENT']);
 				$foundAccount->set('last_login_origin',$_SERVER['REMOTE_ADDR']);
 				$foundAccount->set('last_login_date',$this->configCurrentTime);							
 				// save the account with its session set in
@@ -608,47 +573,32 @@ class giAuthentication implements iAuthentication {
 			}
 			// the password is wrong
 			else {
-				// increment the force count
-				$failures_count = (integer) $foundAccount->get('failures_count') + 1;
-				// set a new expiration
-				$failures_expiration_date = (integer) $this->configCurrentTime + $this->configBanLifetime * 60;
 				// update the user
-				$foundAccount->set('failures_count',$failures_count);
-				$foundAccount->set('failures_expiration_date',$failures_expiration_date);
+				$foundAccount->set('last_failure_agent',$_SERVER['HTTP_USER_AGENT']);
+				$foundAccount->set('last_failure_origin',$_SERVER['REMOTE_ADDR']);
+				$foundAccount->set('last_failure_date',$this->configCurrentTime);
 				// save the account
 				$foundAccount->save();
-				// if we reached the maximum count we report to the user that he is banned
-				if($failures_count >= $this->configBanTolerance) {
-					// access the logger
-					global $giLogger;
-					// log this
-					$giLogger->security('ban_too_many_wrong_passwords');
-					// log wrong password
-					$this->lockDown('too_many_wrong_passwords',true);
-				}
-				// we still have some other tries
-				else {
-					// access the logger
-					global $giLogger;
-					// log this
-					$giLogger->security('wrong_password');
-					// redirect to login page
-					header('Refresh: 3; url='.$this->configLoginUrl);
-					// lockdown
-					$this->lockDown('wrong_password',false);
-				}
+				// access the logger
+				global $giLogger,$giOutput;
+				// log this
+				$giLogger->security('wrong_password');
+				// redirect to the login page after a few second
+				$giOutput->redirectAfter($this->configLoginUrl,3);
+				// output a 403 header
+				$giOutput->error403('wrong_password');
 			}
 		}
 		// wrong login
 		else {
 			// access the logger
-			global $giLogger;
+			global $giLogger,$giOutput;
 			// log this
 			$giLogger->security('wrong_login');
-			// redirect to the login page
-			header('Refresh: 3; url='.$this->configLoginUrl);
-			// lockdown
-			$this->lockDown('wrong_login');
+			// redirect to the login page after a few second
+			$giOutput->redirectAfter($this->configLoginUrl,3);
+			// output a 403 header
+			$giOutput->error403('wrong_password');
 		}	
 	}
 	
@@ -677,7 +627,7 @@ class giAuthentication implements iAuthentication {
 									$this->authLogin		= (string)	$anAccount->get('login');
 									$this->authLevel 		= (integer)	$anAccount->get('id_level');
 									$this->authExpiration	= (integer)	$anAccount->getRaw('session_expiration_date');
-									$this->authModules 		= (array)	$anAccount->get('modules_array');
+									$this->authModules 		= (array)	$anAccount->get('rights_array');
 									// if the session expires within the next half hour
 									if($anAccount->getRaw('session_expiration_date') < ($this->configCurrentTime + 1800) ) {
 										// extend by 36 hours

@@ -2,7 +2,6 @@
 "post_inputs_compromised"	"Posted data are unacceptable"	"Entrées innacceptables"
 "account_is_disabled"	"Account is disabled"	"Compte désactivé"
 "account_has_expired"	"Account validity has expired"	"Ce compte a expiré"
-"user_forces_ban"	"You are already banned"	"Vous avez prolongé la durée de banissement"
-"ban_too_many_wrong_passwords"	"Too many wrong passwords	 you are now banned"	"Trop d'échecs de connexion votre compte est désormais désactivé"
 "wrong_password"	"Wrong password"	"Mot de passe incorrect"
+"please_wait_a_moment_before_trying_again"	"Please wait a moment after a wrong password has been entered"	"Veuillez patienter quelques instants après un échec de connexion"
 "wrong_login"	"Wrong login"	"Identifiant incorrect"	

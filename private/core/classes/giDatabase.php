@@ -3,6 +3,7 @@
 
 TODOLIST:
 - make the ->fts method compatible with MySQL full text search engine.
+- is case of PDO DB, connect « on demand » to free the database lock as soon as possible
 
 CONNECT ON THE FLY !!!
 IF PDO HANDLE IS MISSING BEFORE A QUERY, CONNECT THE DB
@@ -14,11 +15,14 @@ BUT DON'T CONNECT AS DEFAULT
 // helper that provides some simple methods simplifying records manipulation 
 class giDatabase {
 
-	
+	// class of the child
 	const FETCH_CLASS = 'giDatabaseRecord';
 
-	protected $Database;	// handles everything about the database
-	protected $Cache;		// handles everything about the cache
+	// handles everything about the database
+	protected $Database;	
+	
+	// handles everything about the cache
+	protected $Cache;		
 
 	public function __construct() {
 		// initialise empty properties
@@ -62,8 +66,6 @@ class giDatabase {
 		// close all connexions
 		$this->disconnect();
 	}
-
-	/*********************************************************************************/
 	
 	// connect database and cache
 	private function connect() {
@@ -120,66 +122,109 @@ class giDatabase {
 		}
 	}
 	
-	
-	/*********************************************************************************/
-
+	// serialize data to store in the database
 	private function serializator($associativeArray) {
+		// for each element of the array
 		foreach($associativeArray as $anElementKey => $anElementValue) {
-			if(strpos($anElementKey,'serialized') !== false or strpos($anElementKey,'array') !== false) {
-				$associativeArray[$anElementKey] = (string)	serialize($anElementValue);
+			// if we find a serialization keyword
+			if(strpos($anElementKey,'_array') !== false) {
+				// encode the content as JSON
+				$associativeArray[$anElementKey] = (string)	json_encode($anElementValue);
 			}	
 		}
+		// return the array
 		return($associativeArray);
 	}
 	
-	/*********************************************************************************/
-	
+	// convert dates to unix epoch
 	private function timestamper($associativeArray) {
+		// for each element of the array
 		foreach($associativeArray as $anElementKey => $anElementValue) {
-			if(strpos($anElementKey,'date') !== false and strpos($anElementValue,'/') !== false) {
-				list($day,$month,$year) = explode('/',$anElementValue);
-				$timestamp = mktime(0,0,1,$month,$day,$year);
-				$associativeArray[$anElementKey] = (string)	$timestamp;
+			// if we are dealing with a date
+			if(strpos($anElementKey,'_date') !== false) {
+				// if the date is formated with two slashs
+				if(substr_count($anElementValue,'/') == 2) {
+					// set the separator
+					$aSeparator = '/';
+				}
+				// if the date is formated with two dots
+				elseif(substr_count($anElementValue,'.') == 2) {
+					// set the separator
+					$aSeparator = '.';
+				}
+				// if the date is formated with two -
+				elseif(substr_count($anElementValue,'-') == 2) {
+					// set the separator
+					$aSeparator = '-';
+				}
+				// separator in unknown, we assume it is already a timestamp
+				else {
+					// clean it just to make sure
+					$anElementValue = preg_replace('/\D/','',$anElementValue);
+					// don't save anything
+					$associativeArray[$anElementKey] = $anElementValue;
+				}
+				// if we know the separator
+				if($aSeparator) {
+					// explode the date's elements
+					list($day,$month,$year) = explode($aSeparator,$anElementValue);
+					// create a timestamp
+					$timestamp = mktime(0,0,1,$month,$day,$year);
+					// put it in place of the date
+					$associativeArray[$anElementKey] = (string)	$timestamp;
+				}
 			}	
 		}
+		// return the array
 		return($associativeArray);
 	}
 	
-	
-	/*********************************************************************************/
-	
+	// escape the table name
 	private function buildTable($table) {
 		return($this->quoteColumn($table));
 	}
 	
-	/*********************************************************************************/
-	
+	// build the column list
 	private function buildColumns($columns) {
+		// if no columns are provided
 		if(!$columns or !is_array($columns)) {
+			// select all columns
 			return('*');	
 		}
+		// columns are provided
 		else {
 			$actualColumns = array();
+			// for each column
 			foreach($columns as $aColumn) {
+				// escape the column name
 				$actualColumns[] = $this->quoteColumn($aColumn);
 			}
+			// aggregate all columns
 			return(implode(', ',$actualColumns));	
 		}
 	}
 	
 	/*********************************************************************************/
 	
+	// build simple conditions
 	private function buildConditions($conditions,$operator=null) {
+		// if the operator is invalid
 		if(!in_array($operator,array('AND','OR'))) {
+			// force the AND operator
 			$operator = 'AND';
 		}
+		// if conditions are under array form
 		if(is_array($conditions)) {
 			$conditionsArray		= array();
 			$conditionsValues		= array();
+			// for each condition
 			foreach($conditions as $aConditionColumn => $aConditionValue) {
+				// escape the column name and insert the ?
 				$conditionsArray	[]= (string)	$this->quoteColumn($aConditionColumn).' = ?';
+				// set the value
 				$conditionsValues	[]= (string)	$aConditionValue;
 			}
+			// build all the conditions together
 			$conditions 			= (string)	' WHERE ( '.implode(' '.$operator.' ',$conditionsArray).' )';
 			$return					= array($conditions,$conditionsValues);
 			return($return);
@@ -193,7 +238,9 @@ class giDatabase {
 	/*********************************************************************************/
 	
 	private function buildSearchs($conditions,$operator=null) {
+		// if the operator is invalid
 		if(!in_array($operator,array('AND','OR'))) {
+			// force the AND operator
 			$operator = 'AND';
 		}
 		if(is_array($conditions)) {
@@ -929,10 +976,7 @@ class giDatabase {
 		return($return);
 	}
 	
-	/*********************************************************************************/
-	/*********************************************************************************/
-	
-	public function query($query,$atable=null,$lag=null,$affected=null) {
+	public function raw($query,$atable=null,$lag=null,$affected=null) {
 		// if we don't have a connexion yet
 		if(!$this->Database['handle']) {
 			// connect to the database
@@ -961,8 +1005,13 @@ class giDatabase {
 		return($returnedData);
 	}
 	
-	/*********************************************************************************/
-	/*********************************************************************************/
+	// request an advanced query
+	public function query() {
+	
+		// return a new query object
+		return(new giQuery($this->Database));
+		
+	}
 	
 }
 

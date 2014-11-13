@@ -96,7 +96,7 @@ class giOutput {
 			case 'html':
 			
 				// if a redirection is required
-				if($this->Redirect) {
+				if($this->Redirect and $this->Delay) {
 				
 					// build the redirection meta tag	
 					$redirectionMetaTag = "\n\t\t".'<meta http-equiv="refresh" content="'.$this->Delay.'; url='.$this->Redirect.'">';
@@ -158,6 +158,14 @@ class giOutput {
 			
 				// set proper header
 				$this->setHeader('Content-type','text/plain; charset='.$this->getCharset());
+				
+				// if a redirection is required
+				if($this->Redirect and $this->Delay) {
+				
+					// header redirect
+					header('Refresh: '.$this->Delay.'; url='.$this->Redirect);	
+					
+				}
 				
 				// if the content is an array
 				if(is_array($this->getContent())) {
@@ -261,8 +269,9 @@ class giOutput {
 				// output the proper modification date
 				$this->setHeader('Last-Modified',date('r',filemtime($this->getContent())));
 				
-				// get and set the mimetype
+				// get mimetype
 				$Fileinfo = finfo_open(FILEINFO_MIME);
+				// set mimetype
 				$this->setHeader('Content-type',finfo_file($Fileinfo,$this->getContent()));
 				
 				
@@ -369,11 +378,12 @@ class giOutput {
 		// access required objects
 		global $giConfiguration, $giRequest, $giDebug, $giAuthentication;
 		
+		// compute the final execution time
+		$this->ExecutionTime = round(microtime(true) - $giConfiguration->getStartTime(),3).' sec';
+		
 		// if type is html AND debug is enabled in the config AND debug enabled by the request
 		if($this->Type == 'html' and $giConfiguration->isDebugEnabled() and $giRequest->isDebugEnabled()) {
 			
-			// compute the final execution time
-			$this->ExecutionTime = round(microtime(true) - $giConfiguration->getStartTime(),3).' sec';
 			
 			// add the debugging code to the actual content
 			$this->Content .= $giDebug->getDebugHTML();
@@ -597,50 +607,117 @@ class giOutput {
 	
 	// malformed request
 	public function error400($reason='400 Bad Request') {
+		
+		// clean previous buffer
 		ob_get_clean();
+		
+		// force disable cache
+		$this->disableCache();
+		
+		// set type text
+		$this->setType('text');
+		
+		// set error header
 		header('HTTP/1.0 400 Bad Request', true, 400);
-		header('Content-type: text/plain');
-		die(giStringFor($reason));
+		
+		// set message
+		$this->setContent(giStringFor($reason));
+		
+		// output
+		$this->output();
+
 	}
 	
 	// refuse access
 	public function error403($reason='403 Forbidden') {
+		
+		// clean previous buffer
 		ob_get_clean();
-		header('HTTP/1.1 403 Forbidden');
-		header('Content-type: text/plain');
-		die(giStringFor($reason));
+		
+		// force disable cache
+		$this->disableCache();
+		
+		// set type text
+		$this->setType('text');
+		
+		// set error header
+		header('HTTP/1.1 403 Forbidden', true, 403);
+		
+		// set message
+		$this->setContent(giStringFor($reason));
+		
+		// output
+		$this->output();
+		
 	}
 	
 	// file not found
 	public function error404($reason='404 Not Found') {
+		
+		// clean previous buffer
 		ob_get_clean();
-		header('HTTP/1.1 404 Not Found');
-		header('Content-type: text/plain');
-		die(giStringFor($reason));
-	}
-
-	// method not allowed
-	public function error405($reason='405 Method Not Allowed') {
-		ob_get_clean();
-		header('HTTP/1.1 405 Method Not Allowed');
-		header('Content-type: text/plain');
-		die(giStringFor($reason));
+		
+		// force disable cache
+		$this->disableCache();
+		
+		// set type text
+		$this->setType('text');
+		
+		// set error header
+		header('HTTP/1.1 404 Not Found', true, 404);
+		
+		// set message
+		$this->setContent(giStringFor($reason));
+		
+		// output
+		$this->output();
+		
 	}
 	
 	// declare internal error
 	public function error500($reason='500 Internal Server Error') {
+		
+		// clean previous buffer
 		ob_get_clean();
-		header('HTTP/1.1 500 Internal Server Error');
-		header('Content-type: text/plain');
-		die(giStringFor($reason));
+		
+		// force disable cache
+		$this->disableCache();
+		
+		// set type text
+		$this->setType('text');
+		
+		// set error header
+		header('HTTP/1.1 500 Internal Server Error', true, 500);
+		
+		// set message
+		$this->setContent(giStringFor($reason));
+		
+		// output
+		$this->output();
+		
 	}
 	
 	// service unavailable
 	public function error503($reason='503 Service Unavailable') {
+		
+		// clean previous buffer
 		ob_get_clean();
-		header('HTTP/1.1 503 Service Unavailable');
-		header('Content-type: text/plain');
-		die(giStringFor($reason));
+		
+		// force disable cache
+		$this->disableCache();
+		
+		// set type text
+		$this->setType('text');
+		
+		// set error header
+		header('HTTP/1.1 503 Service Unavailable', true, 503);
+		
+		// set message
+		$this->setContent(giStringFor($reason));
+		
+		// output
+		$this->output();
+		
 	}
 	
 	// hard redirect no wait
@@ -653,7 +730,7 @@ class giOutput {
 		die();
 	}
 	
-	// soft redirect with a delay
+	// soft/hard redirect with a delay
 	public function redirectAfter($destination,$delay=3) {
 		
 		// set the delay
