@@ -219,27 +219,29 @@ class giDatabase {
 		}
 	}
 	
-	/*
-	 * *********************************************************************************
-	 * BUILDFINDS
-	*/
-	private function buildFinds($conditions,$operator=null) {
+	/*********************************************************************************/
 	
+	private function buildFinds($conditions,$operator=null) {
+		
+		// if the operator is invalid
 		if(!in_array($operator,array('AND','OR'))) {
+			// force an AND operator
 			$operator = 'AND';
 		}
-	
+		// if conditions are an array
 		if(is_array($conditions)) {
 			$conditionsArray	= array();
 			$conditionsValues	= array();
 			$ConditionCount		= 0;
-				foreach($conditions as $aCondition) {
-				if( count($aCondition) == 3 && !in_array($aCondition[0],array('AND','OR')) ) {
+			// for each specified condition
+			foreach($conditions as $aCondition) {
+				// if the parameter array contains 3 parameter but the first is not an operator
+				if(count($aCondition) == 3 && !in_array($aCondition[0],array('AND','OR')) ) {
 				// le descripteur de condition contient 3 parametres ET le 1er parametre n'est ni AND ni OR
 					list( $ConditionColumn,$ConditionOperator,$ConditionValue ) = $aCondition;
 					// utiliser l'operateur par defaut
 					$ConditionChain = $operator ;
-							} elseif( count($aCondition) == 4 && in_array($aCondition[0],array('AND','OR')) ) {
+				} elseif( count($aCondition) == 4 && in_array($aCondition[0],array('AND','OR')) ) {
 				// le descripteur de condition contient 4 parametres ET le 1er parametre est AND ou OR
 					list( $ConditionChain,$ConditionColumn,$ConditionOperator,$ConditionValue ) = $aCondition;
 				} else {
@@ -266,7 +268,8 @@ class giDatabase {
 					$not = " NOT ";
 					$ConditionOperator = str_replace( array("NOT "," NOT") , "", $ConditionOperator );
 				} else { $not = ''; }
-								switch( $ConditionOperator ){
+				// depending on the operator
+				switch( $ConditionOperator ){
 					case '=':
 					case '!=':
 					case '<>':
@@ -347,18 +350,19 @@ class giDatabase {
 						break;
 				}
 			}
-			// construit la chaine des conditions
+			// build the whole query
 			$conditions = implode(' ',$conditionsArray);
-			// supprime le premier operateur de chainage si besoin
+			// remove first and last operators
 			if( substr($conditions, 0,4) == 'AND ' ){
 				$conditions = substr($conditions, 4);
 			} elseif( substr($conditions, 0,3) == 'OR ' ){
 				$conditions = substr($conditions, 3);
 			}
-				$conditions 			= (string)	'WHERE ( '.$conditions.' )';
+			$conditions 			= (string)	'WHERE ( '.$conditions.' )';
 			$return					= array($conditions,$conditionsValues);
 			return($return);
 		}
+		// conditions are not an array we cannot return jack
 		else {
 			$return					= array('',array());
 			return($return);
