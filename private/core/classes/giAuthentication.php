@@ -519,6 +519,8 @@ class giAuthentication implements iAuthentication {
 			if(!$foundAccount->get('is_enabled')) {
 				// access the logger
 				global $giLogger;
+				// unset password
+				unset($_POST[$this->configPostPassword]);
 				// log this
 				$giLogger->security('account_is_disabled');
 				// lockdown
@@ -528,6 +530,8 @@ class giAuthentication implements iAuthentication {
 			if($foundAccount->get('account_expiration_date') and $this->configCurrentTime > $foundAccount->getRaw('account_expiration_date')) {
 				// access the logger
 				global $giLogger;
+				// unset password
+				unset($_POST[$this->configPostPassword]);
 				// log this
 				$giLogger->security('account_has_expired');
 				// lockdown
@@ -537,7 +541,9 @@ class giAuthentication implements iAuthentication {
 			if($foundAccount->getRaw('last_failure_origin') == $_SERVER['REMOTE_ADDR'] and $foundAccount->getRaw('last_failure_date') and 
 			($foundAccount->getRaw('last_failure_date') + 30 > $this->configCurrentTime)) {
 				// access the gioutput
-				global $giOutput;
+				global $giLogger,$giOutput;
+				// log this
+				$giLogger->security('user_must_wait_before_trying_again');
 				// redirect to the login page after a few second
 				$giOutput->redirectAfter($this->configLoginUrl,3);
 				// output a 403 header
@@ -581,6 +587,8 @@ class giAuthentication implements iAuthentication {
 				$foundAccount->save();
 				// access the logger
 				global $giLogger,$giOutput;
+				// unset password
+				unset($_POST[$this->configPostPassword]);
 				// log this
 				$giLogger->security('wrong_password');
 				// redirect to the login page after a few second
@@ -593,6 +601,8 @@ class giAuthentication implements iAuthentication {
 		else {
 			// access the logger
 			global $giLogger,$giOutput;
+			// unset password
+			unset($_POST[$this->configPostPassword]);
 			// log this
 			$giLogger->security('wrong_login');
 			// redirect to the login page after a few second
