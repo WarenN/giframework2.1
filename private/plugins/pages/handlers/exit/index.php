@@ -1,0 +1,1 @@
+<?php $giAuthentication->closeSession(); ?>

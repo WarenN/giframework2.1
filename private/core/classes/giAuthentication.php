@@ -253,7 +253,7 @@ class giAuthentication implements iAuthentication {
 				// remove the password
 				unset($_POST[$this->configPostPassword]);
 				// log this
-				$giLogger->info('used_has_logged_in');
+				$giLogger->info('user_has_logged_in');
 			}	
 		}	
 		// if we want to directly access a page
@@ -538,10 +538,19 @@ class giAuthentication implements iAuthentication {
 				// lockdown
 				$this->lockDown('account_is_disabled');
 			}
+			// if the account has expired
+			if($foundAccount->get('account_expiration_date') and $this->configCurrentTime > $foundAccount->getRaw('account_expiration_date')) {
+				// access the logger
+				global $giLogger;
+				// log this
+				$giLogger->security('account_has_expired');
+				// lockdown
+				$this->lockDown('account_has_expired');
+			}
 			// if the user reached the maximum number of failed login atempts
 			if($foundAccount->get('failures_count') >= $this->configBanTolerance) {
 				// if the ban has not expired yet
-				if($foundAccount->getRaw('failures_expiration_date') >= $this->currentTime) {
+				if($foundAccount->getRaw('failures_expiration_date') >= $this->configCurrentTime) {
 					// user is still banned so we reban for ten times the duration of a normal ban
 					$failures_expiration_date = (integer) $this->configCurrentTime + $this->configBanLifetime * 60 * 10;
 					// update the database entry
@@ -557,7 +566,10 @@ class giAuthentication implements iAuthentication {
 				}
 				// the ban has expired
 				else {
-					/**** LOG : BAN FOR - HAS EXPIRED ****/
+					// access the logger
+					global $giLogger;
+					// log this
+					$giLogger->security('ban_expired');
 					// we clean the ban entries
 					$foundAccount->set('failures_expiration_date','');
 					$foundAccount->set('failures_count',0);
@@ -654,42 +666,45 @@ class giAuthentication implements iAuthentication {
 					if($anAccount->get('session_key') == $sessionCookie) {
 						// if the session has not yet expired
 						if($anAccount->getRaw('session_expiration_date') > $this->configCurrentTime) {
-							// if the dynamicaly generated session id still matches
-							if($this->getChecksum($this->getSignature().$anAccount->getRaw('session_expiration_date')) == $sessionCookie) {
-								// we grant access and fill auth infos
-								$this->authGranted 		= (boolean)	true;	
-								$this->authAccount		= (object)	$anAccount;
-								$this->authId			= (integer)	$anAccount->get('id');
-								$this->authLogin		= (string)	$anAccount->get('login');
-								$this->authLevel 		= (integer)	$anAccount->get('id_level');
-								$this->authExpiration	= (integer)	$anAccount->getRaw('session_expiration_date');
-								$this->authModules 		= (array)	$anAccount->get('modules_array');
-								// if the session expires within the next half hour
-								if($anAccount->getRaw('session_expiration_date') < ($this->configCurrentTime + 1800) ) {
-									// extend by 36 hours
-									$anAccount->set('session_expiration_date',$anAccount->getRaw('session_expiration_date') + 36*3600);
-									// update the session string
-									$anAccount->set('session_key',$this->getChecksum($this->getSignature().$anAccount->getRaw('session_expiration_date')));
-									// save the extended session
-									$anAccount->save();
-									// extend the cookie user
-									setcookie($this->configLoginCookie,$loginCookie,$anAccount->getRaw('session_expiration_date'),'/');
-									// extend the cookie pass
-									setcookie($this->configPasswordCookie,$passwordCookie,$anAccount->getRaw('session_expiration_date'),'/');
-									// extend the cookie session
-									setcookie($this->configSessionCookie,$anAccount->get('session_key'),$anAccount->get('session_expiration_date'),'/');
-									}
-								} else { $this->killCookies(); $this->killSession($anAccount->get('id')); }	// the session signature mismatch
-							} else { $this->killCookies(); $this->killSession($anAccount->get('id')); } 	// the session has expired
-						} else { $this->killCookies(); $this->killSession($anAccount->get('id')); } 		// the session cookie/dbentry mismatch
-					} else { $this->killCookies(); $this->killSession($anAccount->get('id')); } 			// the password cookie/dbentry mismatch
+							// if the account has itself not expired yet or has no expiration date
+							if(!$anAccount->getRaw('account_expiration_date') or $anAccount->getRaw('account_expiration_date') > $this->configCurrentTime) {
+								// if the dynamicaly generated session id still matches
+								if($this->getChecksum($this->getSignature().$anAccount->getRaw('session_expiration_date')) == $sessionCookie) {
+									// we grant access and fill auth infos
+									$this->authGranted 		= (boolean)	true;	
+									$this->authAccount		= (object)	$anAccount;
+									$this->authId			= (integer)	$anAccount->get('id');
+									$this->authLogin		= (string)	$anAccount->get('login');
+									$this->authLevel 		= (integer)	$anAccount->get('id_level');
+									$this->authExpiration	= (integer)	$anAccount->getRaw('session_expiration_date');
+									$this->authModules 		= (array)	$anAccount->get('modules_array');
+									// if the session expires within the next half hour
+									if($anAccount->getRaw('session_expiration_date') < ($this->configCurrentTime + 1800) ) {
+										// extend by 36 hours
+										$anAccount->set('session_expiration_date',$anAccount->getRaw('session_expiration_date') + 36*3600);
+										// update the session string
+										$anAccount->set('session_key',$this->getChecksum($this->getSignature().$anAccount->getRaw('session_expiration_date')));
+										// save the extended session
+										$anAccount->save();
+										// extend the cookie user
+										setcookie($this->configLoginCookie,$loginCookie,$anAccount->getRaw('session_expiration_date'),'/');
+										// extend the cookie pass
+										setcookie($this->configPasswordCookie,$passwordCookie,$anAccount->getRaw('session_expiration_date'),'/');
+										// extend the cookie session
+										setcookie($this->configSessionCookie,$anAccount->get('session_key'),$anAccount->get('session_expiration_date'),'/');
+										}
+									} else { $this->killCookies(); $this->killSession($anAccount->get('id')); }	// the session signature mismatch
+								} else { $this->killCookies(); $this->killSession($anAccount->get('id')); } 	// the account has expired
+							} else { $this->killCookies(); $this->killSession($anAccount->get('id')); } 		// the session has expired
+						} else { $this->killCookies(); $this->killSession($anAccount->get('id')); } 			// the session cookie/dbentry mismatch
+					} else { $this->killCookies(); $this->killSession($anAccount->get('id')); } 				// the password cookie/dbentry mismatch
 				}
 			}
 		}
 
 
-	/* PRIVATE METHODS ARE DECLARED OVER
-	********************************* */
+	/* PRIVATE METHODS ARE DECLARED ABOVE
+	********************************** */
 	
 }
 
@@ -703,7 +718,7 @@ class giAuthentication implements iAuthentication {
 // - end in security weakness. If you need to   -
 // - add your own method please extend Auth or  -
 // - extend AuthExtra which offers most common  -
-// - methods that you may be looking for        -
+// - methods that you might be looking for      -
 // ______________________________________________
 // ----------------------------------------------
 */
