@@ -17,7 +17,6 @@ class giRouter {
 		$this->Headers			= array();
 		$this->Parameters		= array();
 		$this->Routes			= array();
-		$this->Cli				= false;
 		
 	}
 	
@@ -73,23 +72,6 @@ class giRouter {
 	// allows you to get a specific parameter
 	public function get($parameter) {
 		
-	}
-	
-	// check for cli execution
-	private function cli() {
-		
-		// if command line argument are present
-		if(count($_SERVER['argv']) > 0 and $_SERVER['argv'][1] and $_SERVER['argv'][2]) {
-			// set as command line
-			$this->cli = true;
-			// patch them as url
-			$this->Request = $_SERVER['argv'][2];
-			// access the configuration handler
-			global $giConfiguration;
-			// set him what environment it is
-			$giConfiguration->setEnvironment($_SERVER['argv'][1]);
-		}
-			
 	}
 
 }

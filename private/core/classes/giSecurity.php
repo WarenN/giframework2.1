@@ -92,15 +92,13 @@ class giSecurity implements iSecurity {
 	public function __construct() {
 		
 		// access the main database abstration singleton
-		global $giDatabase,$giConfiguration;
+		global $giDatabase;
 	
 		// class variables configuration
 		$this->configDatabase			= (object)	$giDatabase;
 		$this->configTableName			= (string)	'Accounts';
 		$this->configSalt				= (string)	'cc696n2babBc1307bdcF30d69dEa8ce93c1307bd7ZfIzbKsqmP8ce93c';
-		$this->configLoginUrl			= (string)	$giConfiguration->getLoginPage();
-		$this->configHomeUrl			= (string)	$giConfiguration->getHomePage();
-		$this->configLogoutUrl			= (string)	$giConfiguration->getLogoutPage();
+		
 		$this->configLoginCookie		= (string)	'giLogin';
 		$this->configPasswordCookie		= (string)	'giCookie';
 		$this->configSessionCookie		= (string)	'giSession';
@@ -122,6 +120,13 @@ class giSecurity implements iSecurity {
 
 	}
 
+	public function setConfiguration($home_url,$login_url,$logout_url) {
+	
+		$this->configLoginUrl			= $home_url;
+		$this->configHomeUrl			= $login_url;
+		$this->configLogoutUrl			= $logout_url;
+		
+	}
 
 	/******************/
 	/* PUBLIC METHODS */
