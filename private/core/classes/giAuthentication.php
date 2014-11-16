@@ -168,8 +168,7 @@ class giAuthentication implements iAuthentication {
 	protected $configHomeUrl; 			// (string) is this useful ?
 	protected $configLogoutUrl; 		// (string) is this useful ?
 	protected $configSessionLifetime;	// (integer) in hours
-	protected $configBanLifetime;		// (integer) in minutes
-	protected $configBanTolerance;		// (integer)
+	protected $configWaitingDelay;		// (integer) in seconds
 	protected $configPasswordLength;	// (integer)
 	protected $configLoginCookie;		// (string)
 	protected $configPasswordCookie;	// (string)
@@ -209,8 +208,7 @@ class giAuthentication implements iAuthentication {
 		$this->configPostPassword		= (string)	'password';
 		$this->configCurrentTime		= (integer)	time();
 		$this->configSessionLifetime	= (integer)	72;
-		$this->configBanLifetime		= (integer)	15;
-		$this->configBanTolerance		= (integer)	5;
+		$this->configWaitingDelay		= (integer)	60;
 		$this->configPasswordLength		= (integer)	6;
 		
 		// user variable initialization (see class variables for comments)
@@ -539,7 +537,7 @@ class giAuthentication implements iAuthentication {
 			}
 			// if the account has been forced by the same person in the last x seconds
 			if($foundAccount->getRaw('last_failure_origin') == $_SERVER['REMOTE_ADDR'] and $foundAccount->getRaw('last_failure_date') and 
-			($foundAccount->getRaw('last_failure_date') + 30 > $this->configCurrentTime)) {
+			($foundAccount->getRaw('last_failure_date') + $this->configWaitingDelay > $this->configCurrentTime)) {
 				// access the gioutput
 				global $giLogger,$giOutput;
 				// log this

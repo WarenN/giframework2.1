@@ -2,6 +2,6 @@
 .DS_Store
 ._*
 .Trashes
+*.json
 Thumbs.db
 *.json
-
