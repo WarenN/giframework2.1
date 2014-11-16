@@ -4,11 +4,14 @@
 if(!file_exists('../private/data/cache/plugins/pages.json') or $giConfiguration->getEnvironment() == 'dev') {
 	// parses folders to build the pages mapping
 	parseStatic('../private/plugins/pages/handlers/',$mapping);
-	// save the parsed mapping
-	$aCacheOutput = new giOutput();
-	$aCacheOutput->setContent($mapping);
-	$aCacheOutput->setType('json');
-	$aCacheOutput->save('../private/data/cache/plugins/pages.json',true);
+	// if in production
+	if($giConfiguration->getEnvironment() == 'prod') {
+		// save the parsed mapping
+		$aCacheOutput = new giOutput();
+		$aCacheOutput->setContent($mapping);
+		$aCacheOutput->setType('json');
+		$aCacheOutput->save('../private/data/cache/plugins/pages.json',true);
+	}
 }	
 // a cache file exists
 else {

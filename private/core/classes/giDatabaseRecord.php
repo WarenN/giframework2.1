@@ -115,8 +115,8 @@ class giDatabaseRecord {
 	/*********************************************************************************/
 	
 	public function set($column,$value) {
-		if(strpos($column,'serialized') !== false or strpos($column,'array') !== false) {
-			$this->{$column}	= (string)	serialize($value);
+		if(strpos($column,'_array') !== false) {
+			$this->{$column}	= (string)	json_encode($value);
 		}
 		else {
 			$this->{$column}	= (string)	$value;
@@ -197,7 +197,6 @@ class giDatabaseRecord {
 	
 	public function getSelectMultiple($column,$list,$options=null) {
 		$options['multiple'] = 'multiple';
-		/*return($this->getSelectFor($column,$list,'',$options));	*/
 		$value = $this->get($column);
 		return(
 			giSelect(

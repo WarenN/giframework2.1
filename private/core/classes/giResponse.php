@@ -1,10 +1,7 @@
 <?php
 
-interface iOutput {
-	
-}
 
-class giOutput {
+class giResponse {
 
 	protected $pageDefaults;
 	protected $Type;				// handle the type of output (html, json, xml, csv, text, file)

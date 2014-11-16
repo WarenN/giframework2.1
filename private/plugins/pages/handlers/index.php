@@ -1,9 +1,14 @@
 <?php
-$giOutput->setType('html');
-$giOutput->setTitle('giFramework 2');
+$giResponse->setType('html');
+$giResponse->setTitle('giFramework 2.1');
+
+var_dump($giRouter);
+
+die();
+
 ?>
 <h1 style="text-align:center;font-family:arial;font-size:36px;padding-top:20px;">
-	giFramework 2
+	giFramework 2<b style="color:#0069c2;">.1</b>
 </h1>
 <p style="text-align:center;color:#999999;font-family:arial;">
 	It seems to be working !<br />
@@ -13,13 +18,6 @@ $giOutput->setTitle('giFramework 2');
 
 <?php
 
-
-// sample code to create a user and user the database
-/*
-$anAccount = $giDatabase->insert('Accounts',array('login' => 'root','id_level' => 0,'is_enabled'=> 1));
-$giAuthentication->setUserPassword($anAccount->get('id'),'toor');
-$allAccounts = $giDatabase->select('Account',array('id_level'=>'1'));
-*/
 
 
 ?>
