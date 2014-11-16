@@ -28,12 +28,13 @@ foreach(scandir('../private/core/classes/') as $aClassFile) {
 // initialization of global objects
 $giConfiguration	= new giConfiguration($giConfiguration);// handle the global configuration
 $giLogger			= new giLogger();						// logging tool
-$giOutput 			= new giOutput();						// output formatting tool
+$giResponse 		= new giResponse();						// output formatting tool
 $giRequest			= new giRequest(); 						// handle requests
+$giRouter			= new giRouter();						// handles routing of requests
 $giDatabase			= new giDatabase(); 					// database abstraction layer
 $giDebug			= new giDebug();						// debugging helper
 $giLocalization		= new giLocalization(); 				// help translating
-$giAuthentication	= new giAuthentication(); 				// authentication and security handler
+$giSecurity			= new giSecurity(); 				// authentication and security handler
 
 // get the configuration array
 $giConfigurationArray = $giConfiguration->getConfiguration();
@@ -199,68 +200,6 @@ else {
 				// include
 				include($aPlugin['initializator']);
 			}
-			/*
-			// if an assets folder exists and we are in dev environment
-			if(is_dir($aPlugin['assets']) and $giConfiguration->getEnvironment() == 'dev') {
-				// iterate on the assets subfolders
-				foreach(scandir($aPlugin['assets']) as $aPlugin['assets_subfolder'] ) {
-					// if the subfolder is acceptable
-					if(in_array($aPlugin['assets_subfolder'],array('css','js','img','fonts'))) {
-						// define the destination
-						$aPlugin['assets_destinations'][$aPlugin['assets_subfolder']] = './'.$aPlugin['assets_subfolder'].'/'.$aPlugin['name'].'/';
-						// if the folder doesn't exist already
-						if(!is_dir($aPlugin['assets_destinations'][$aPlugin['assets_subfolder']])) {
-							// create a similar folder in the public directory
-							mkdir($aPlugin['assets_destinations'][$aPlugin['assets_subfolder']]);
-						}
-						// for each file in here
-						foreach(scandir($aPlugin['assets'].$aPlugin['assets_subfolder']) as $aPlugin['an_asset']) {
-							// if the file is valid
-							if(substr($aPlugin['an_asset'],0,1) != '.') {
-								// in case obfuscation is enabled
-								if($giConfiguration->isObfuscationEnabled()) {
-									// switch depending on the filetype
-									switch($aPlugin['assets_subfolder']) {
-										// in case of css
-										case 'css':
-											// set the file to minify
-											$minifier = new CSS($aPlugin['assets'].$aPlugin['assets_subfolder'].'/'.$aPlugin['an_asset']);
-											// minify and save it
-											$minifier->minify($aPlugin['assets_destinations'][$aPlugin['assets_subfolder']].$aPlugin['an_asset'], CSS::ALL);
-										break;
-										// in case of js
-										case 'js':
-											// set the file to minify
-											$minifier = new JS($aPlugin['assets'].$aPlugin['assets_subfolder'].'/'.$aPlugin['an_asset']);
-											// minify and save it
-											$minifier->minify($aPlugin['assets_destinations'][$aPlugin['assets_subfolder']].$aPlugin['an_asset'], JS::ALL);
-											
-										break;
-										// in case of img/fonts
-										case 'img':
-										case 'fonts':
-											// copy that specific asset
-											copy(
-												$aPlugin['assets'].$aPlugin['assets_subfolder'].'/'.$aPlugin['an_asset'],
-												$aPlugin['assets_destinations'][$aPlugin['assets_subfolder']].$aPlugin['an_asset']
-											);
-										break;	
-									}
-								}
-								// obfuscation is disabled
-								else {
-									// copy that specific asset
-									copy(
-										$aPlugin['assets'].$aPlugin['assets_subfolder'].'/'.$aPlugin['an_asset'],
-										$aPlugin['assets_destinations'][$aPlugin['assets_subfolder']].$aPlugin['an_asset']
-									);
-								}
-							}
-						}
-					}
-				}
-			}
-			*/
 		// unset the temporary aPlugin variable
 		unset($aPlugin);
 		}
@@ -279,10 +218,10 @@ if(!isset($giIncludes['cached'])) {
 $giRequest->processRequest();
 
 // autoconfigure the output
-$giOutput->autoConfigure($giConfiguration);
+$giResponse->autoConfigure($giConfiguration);
 
 // set html as the default type of output
-$giOutput->setType('html');
+$giResponse->setType('html');
 
 // we start the buffer to grab everything that leaks from the handler
 ob_start();
@@ -291,15 +230,15 @@ ob_start();
 include($giRequest->getHandler());
 
 // if the handler didn't set any content
-if(!$giOutput->getContent()) {
+if(!$giResponse->getContent()) {
 	
 	// use gargabe collection to set the content
-	$giOutput->setContent(ob_get_clean());
+	$giResponse->setContent(ob_get_clean());
 	
 }
 
-// let the giOutput handle the collected garbage
-$giOutput->output(); 
+// let the giResponse handle the collected garbage
+$giResponse->output(); 
 
 // this line in never reached by PHP
 // EOF

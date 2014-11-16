@@ -1,129 +1,29 @@
 <?php
-/*
 
----------------------------------------------------
------- giAuthenticationHandler (v3) 16/10/12 ------
-------   Julien Arnaud, ajulien@gmail.com    ------
----------------------------------------------------
+/*	
 
-
-New in this version (v3) :
-
-	* new table name and structure
-	* full native usage of giAbstractDatabase
-	* only useful functions are present
-	* is_enabled account status
-	* optimized database queries
-	* modernized error feedback handling
-	* dropped legacy - no compat
-	* lightweight logging system
-	
-
---------------------------
-Table structure definition
-
-	
-	Accounts
-	-	id							(integer)	-		the primary key
-	-	login						(string) 	255		the username used to log in
-	-	password					(string) 	64		the password used to log in
-	-	id_level					(integer) 	2		the access level
-	-	session_key					(string)	64		the session key
-	-	session_expiration_date		(integer)	16		the expiration time of the session
-	-	failures_count				(integer)	2		the failed login count
-	-	failures_expiration_date	(integer)	16		the failed login release date
-	-	last_login_date				(integer)	16		the last time account has been opened
-	-	last_login_ip				(string)	16		the last ip used on this account
-	-	rights_array				(string)	1024	the serialized modules array
-	-	data_array					(string)	1024	the serialized user's data
-	
-	
-
-------------------------------------------------
-Page securing method (use at least one of these)
-
-
-
-	// #1 enforce the security without any option 
-	// requires a valid account
-	$giAuthenticationHandler->enforceSecurity()
-	
-	// #2 enforce the security with a level check
-	// requires a valid account and a level of minimum 5
-	$giAuthenticationHandler->enforceSecurity(5);
-	
-	// #3 enforce the security with a level and module check
-	// requires a valid account, a level of minimum 5 and the module 'demo'
-	$giAuthenticationHandler->enforceSecurity(5,'demo');
-
-
-
----------------------------------------------------------
-Credentials checking (for fine tuning of contents access)
-
-
-
-	// check for a specific level
-	// returns true if the user reachs at least a level 5, false if not
-	giAuthenticationHandler->checkSelfLevel(5);
-	
-	// check for a specific module
-	// returns true if the user has the module 'demo', false if not
-	giAuthenticationHandler->checkSelfModule('demo');
-
-
-
----------------------------
-Access to basic information
-
-
-
-	// returns the current user id or 0 if not logged in										
-	public function getSelfId();									
-	
-	// return the current login
-	public function getSelfLogin();
-	
-	// return the current user level
-	public function getSelfLevel();
-	
-	// return the expiration time
-	public function getSelfExpiration();
-
-
-
-------------------
-Close self session
-
-
-
-	// close definitively our session
-	public function closeSession();
-
-
-
-----------------
-Password setting
-
-
-
-	// this is the only thing about users management that needs to pass trhu this class
-	// everything else about users can be done directly on its abstract database record
-	public function setUserPassword($aUserId,$aUserPassword);
-
-
-
---------
-Log file
-
-[DATE]-[TIME], [ACTION]
-
-
+CREATE TABLE "Accounts" (
+  "id" integer NULL PRIMARY KEY AUTOINCREMENT,
+  "id_level" numeric NULL,
+  "is_enabled" numeric NULL,
+  "login" text NULL,
+  "password" text NULL,
+  "account_expiration_date" numeric NULL,
+  "session_key" text NULL,
+  "session_expiration_date" numeric NULL,
+  "last_login_origin" text NULL,
+  "last_login_agent" text NULL,
+  "last_login_date" numeric NULL,
+  "last_failure_origin" numeric NULL,
+  "last_failure_agent" numeric NULL,
+  "last_failure_date" numeric NULL,
+  "rights_array" text NULL
+);
 
 */
 
 // declare the interface
-interface iAuthentication {
+interface iSecurity {
 	
 	// returns the current user id or 0 if not logged in										
 	public function getSelfId();									
@@ -154,7 +54,7 @@ interface iAuthentication {
 
 	}
 
-class giAuthentication implements iAuthentication {
+class giSecurity implements iSecurity {
 
 	/****************************/
 	/* CONFIGURATION PARAMETERS */
@@ -665,19 +565,4 @@ class giAuthentication implements iAuthentication {
 	********************************** */
 	
 }
-
-/*
-// ______________________________________________
-// ------------ IMPORT SECURITY NOTE ------------
-// - please DO NOT edit this class, and don't   -
-// - try to overload it. I set most methods as  -
-// - final because editing em without a good    -
-// - knowledge of the whole class system will   -
-// - end in security weakness. If you need to   -
-// - add your own method please extend Auth or  -
-// - extend AuthExtra which offers most common  -
-// - methods that you might be looking for      -
-// ______________________________________________
-// ----------------------------------------------
-*/
 ?>
