@@ -16,6 +16,10 @@ class TestController extends giController {
 			case 'formating-test':
 				$this->formatAction();
 			break;
+			
+			case 'debug':
+				$this->debugAction();
+			break;
 		
 			default;	
 		}
@@ -25,9 +29,7 @@ class TestController extends giController {
 	private function formatAction() {
 	
 		/*
-		call this page with /demo/donothing/html/
-		or /demo/formating-test/json/
-		or /demo/formating-test/csv/
+		call this page with /demo/formating-test/json/
 		or /demo/formating-test/xml/
 		or /demo/formating-test/text/
 		*/
@@ -41,6 +43,13 @@ class TestController extends giController {
 			'brown'=>'earth',
 			'yellow'=>'sand'
 		));
+		
+	}
+	
+	private function debugAction() {
+	
+		//var_dump($this->Core->Router);
+		//die();
 		
 	}
 	

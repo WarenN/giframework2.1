@@ -231,13 +231,13 @@ class giCore {
 		ob_start();
 		
 		// once everything is ready we dispatch the request to the proper controller/view/response
-		list(
-			$routed_script,
-			$routed_class,	
-		) = $this->Router->dispatch();
+		$this->Router->dispatch();
+		
+		// secure the request
+		$this->secure();
 		
 		// include the proper script in its own environment
-		$this->sandbox($routed_script,$routed_class);
+		$this->sandbox();
 		
 		// if no content has been set by controller/view
 		if(!$this->Response->getContent()) {
@@ -252,16 +252,27 @@ class giCore {
 	
 	}
 	
-	// inclusion happends here
-	public function sandbox($routed_script,$routed_class) {
+	// apply security rules
+	private function secure() {
+	
+		// if a level is specified
+		if($this->Router->Level != null) {
+			// enforce security
+			$this->Security->enforceSecurity($this->Router->Level,$this->Router->Module);
+		}
+		
+	}
+	
+	// inclusion happens here
+	private function sandbox() {
 		
 		// include the controller
-		require($routed_script);
+		require($this->Router->Script);
 		
-		// instanciate
-		$controller = new $routed_class($this);
+		// instanciate the class associated to the controller
+		$controller = new $this->Router->Class($this);
 		
-		// call the default
+		// call the default if no :action and no $_POST['action']
 		$controller->defaultAction();
 		
 	}

@@ -60,7 +60,7 @@ class giRouter {
 	}
 	
 	// register a route
-	public function route($url,$controller,$level=null,$right=null) {
+	public function route($url,$controller,$level=null,$module=null) {
 		
 		// if missing plugin/controller separator (this codeblock can be commented for performance)
 		if(substr_count($controller,'/') != 1) {
@@ -90,7 +90,7 @@ class giRouter {
 			'mapto'				=>$controller,
 			'parameters'		=>$parameters,
 			'security_level'	=>$level,
-			'security_right'	=>$right,
+			'security_module'	=>$module,
 		);
 		
 	}
@@ -114,6 +114,8 @@ class giRouter {
 		$this->checkScript();
 		// check method
 		$this->checkMethod();
+		// check security
+		$this->checkSecurity();
 		// check parameters
 		$this->checkParameters();
 		// return useful informations to giCore/main
@@ -205,6 +207,16 @@ class giRouter {
 	
 	private function checkMethod() {
 		
+		
+	}
+	
+	private function checkSecurity() {
+	
+		// set the level
+		$this->Level = $this->Options['security_level'];
+			
+		// set the module
+		$this->Module = $this->Options['security_module'];
 		
 	}
 	
