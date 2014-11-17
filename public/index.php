@@ -1,13 +1,12 @@
 <?php
 
-// require the initialize 
+// require the core 
 require('../private/core/classes/giCore.php');
 
-// initialize
-$giCore = new giCore;
+// initialize it
+$app = new giCore;
 
-// initialize the whole thing
-//require('../private/core/initializator/initializator.php');
-
+// run it
+$app->run();
 
 ?>

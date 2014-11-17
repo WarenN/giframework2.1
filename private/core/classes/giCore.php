@@ -190,7 +190,7 @@ class giCore {
 								// push the include
 								$giIncludes['includes']['locales'][] = $aPlugin['a_locale'];
 								// include the actual library
-								$giLocalization->setLocales($aPlugin['a_locale']);
+								$this->Localization->setLocales($aPlugin['a_locale']);
 							}
 						}
 					}
@@ -227,6 +227,13 @@ class giCore {
 			
 		}
 
+		
+	
+	}
+	
+	// actually route and execute the request
+	public function run() {
+	
 		// start caching the output
 		ob_start();
 		
@@ -249,7 +256,7 @@ class giCore {
 		
 		// if the controller didn't already handle its own output, ask the giResponse to format it
 		$this->Response->output(); 
-	
+		
 	}
 	
 	// apply security rules
