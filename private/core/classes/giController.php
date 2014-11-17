@@ -3,10 +3,10 @@
 class giController {
 	
 	// references to useful objects
-	protected $Core;
+	public $Core;
 	
 	// actual data required by the view
-	protected $Data;
+	public $Data;
 	
 	// prepare controller environment
 	public function __construct(&$giCore) {

@@ -2,13 +2,28 @@
 
 class giRouter {
 		
+	// specific to the whole router
+	protected $Routes;
+	
+	// specific to the current request
 	protected $Request;
 	protected $Method;
 	protected $Headers;
-	protected $Parameters;
-	protected $Routes;
 	protected $Cache;
+	protected $Debug;
 	protected $Cli;
+	
+	// specific to the current route
+	protected $Plugin;
+	protected $Controller;
+	protected $Script;
+	protected $Class;
+	protected $Action;
+	protected $Options;
+	protected $Parameters;
+	
+	// specific to the current request
+	static protected $Compression;
 	static protected $Signature;
 		
 	public function __construct() {
@@ -18,7 +33,15 @@ class giRouter {
 		
 		// set request informations
 		$this->Request 			= (string)	$_SERVER['REQUEST_URI'];
-		$this->Method			= (string)	$_SERVER['HTTP_METHOD'];
+		$this->Debug			= false;
+		$this->Compression		= false;
+		$this->Method			= null;
+		$this->Options			= null;
+		$this->Plugin			= null;
+		$this->Action			= null;
+		$this->Controller		= null;
+		$this->Script			= null;
+		$this->Class			= null;
 		$this->Headers			= array();
 		$this->Parameters		= array();
 		$this->Routes			= array();
@@ -61,11 +84,10 @@ class giRouter {
 		// add to the routing array
 		$this->Routes[$route_static] = array(
 			'url'				=>$route_static,
-			'controller'		=>$controller,
+			'mapto'				=>$controller,
 			'parameters'		=>$parameters,
 			'security_level'	=>$level,
 			'security_right'	=>$right,
-		
 		);
 		
 	}
@@ -77,12 +99,85 @@ class giRouter {
 	// dispatch Request to the proper controller
 	public function dispatch() {
 		
+		// check for request headers
+		$this->checkHeaders();
+		// check for compression
+		$this->checkCompression();
+		// check url
+		$this->checkURL();
+		// check controller
+		$this->checkController();
+		// check method
+		$this->checkMethod();
+		// check parameters
+		$this->checkParameters();
+		// return useful informations to giCore/main
+		return(array(
+			$this->Script,
+			$this->Class
+		));
+
+	}
+	
+	// analyse the url
+	private function checkURL() {	
+	
+		// if we find the debug symbol
+		if(strpos($this->Request,'@@') !== false) {
+			// update the debug status
+			$this->Debug	= true;
+			// clean url
+			$this->Request	= str_replace('@@','',$this->rawRequest);
+		}
+		// if no request URI at all
+		if(!$this->Request) {
+			// use root request
+			$this->Request = '/';
+			
+		}
 		
+	}
+	
+	// check with controller is associated with 
+	private function checkController() {
 		
-		$this->parseRequest();
+		// iterate on the list to find the proper page
+		foreach($this->Routes as $aRoute => $aRouteOptions) {
+			// if the request matchs a whole route
+			if($aRoute == $this->Request) {
+				// set options
+				$this->Options = $aRouteOptions;
+				// get plugin and controller
+				list($this->Plugin,$this->Controller) = explode('/',$aRouteOptions['mapto']);
+				// we found the requested page in the sitemap so we set the proper handler
+				$this->Script = '../private/plugins/'.$this->Plugin.'/controllers/'.$this->Controller.'.php';
+				// this is it
+				return;
+			}
+			// if request matches the begening of a route which is dynamic
+			elseif($aRouteOptions['parameters'] and strpos($this->Request,$aRoute) === 0) {
+				// set options
+				$this->Options = $aRouteOptions;
+				// get plugin and controller
+				list($this->Plugin,$this->Controller) = explode('/',$aRouteOptions['mapto']);
+				// we found the requested page in the sitemap so we set the proper handler
+				$this->Script = '../private/plugins/'.$this->Plugin.'/controllers/'.$this->Controller.'.php';
+				// this is it
+				return;
+			}
+		}
+	}
+	
+	private function checkMethod() {
 		
 		
 	}
+	
+	private function checkParameters() {
+		
+		
+	}
+	
 	
 	private function checkCache() {
 	
@@ -123,6 +218,24 @@ class giRouter {
 		
 	}
 
+	// get headers from the browser
+	private function checkHeaders() {
+		
+		// retrieve the headers
+		$availableHeaders = getallheaders();
+		// if they are found
+		if(is_array($availableHeaders)) {
+			// we push them in place
+			$this->Headers = $availableHeaders;
+		}
+		// no headers found
+		else {
+			// set empty array
+			$this->Headers = array();	
+		}
+		
+	}
+
 	// get the unique signature of a request
 	public static function getSignature() {
 	
@@ -152,6 +265,24 @@ class giRouter {
 	
 		return(false);
 		
+	}
+	
+	// check if the browser accepts compressed (gzip) content
+	private function checkCompression() {
+		// if header are set
+		if($this->Headers) {
+			// if the encoding is set
+			if($this->Headers['Accept-Encoding']) {
+				// if we find a match
+				if(
+					stripos($this->Headers['Accept-Encoding'],'gzip') !== false or 
+					stripos($this->Headers['Accept-Encoding'],'deflate') !== false
+				) {
+					// browser is gladly accepting compression
+					$this->Compression = true;	
+				}
+			}
+		}
 	}
 	
 }

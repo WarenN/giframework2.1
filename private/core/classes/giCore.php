@@ -226,18 +226,23 @@ class giCore {
 			
 		}
 
-		var_dump($this->Router);
-		die();
-
-		// debug
-		//$this->Response->setContent(array($this->Configuration,$giSecurity,$giLocalization,$giDatabase));
-		$this->Response->setContent('Hello world');
-		
 		// start caching the output
 		ob_start();
 		
 		// once everything is ready we dispatch the request to the proper controller/view/response
-		$this->Router->dispatch();
+		list(
+			$routed_script,
+			$routed_class,	
+		) = $this->Router->dispatch();
+		
+		// include the proper script in its own environment
+		$this->sandbox($routed_script,$routed_class);
+		
+		// instanciate the proper class
+		
+		
+		// call default action
+		
 		
 		// if no content has been set by controller/view
 		if(!$this->Response->getContent()) {
@@ -250,6 +255,20 @@ class giCore {
 		// if the controller didn't already handle its own output, ask the giResponse to format it
 		$this->Response->output(); 
 	
+	}
+	
+	// inclusion happends here
+	public function sandbox($routed_script,$routed_class) {
+		
+		// include the controller
+		require($routed_script);
+		
+		// instanciate
+		$controller = new TestController($this);
+		
+		// call the default
+		$controller->defaultAction();
+		
 	}
 	
 	// start the execution time
