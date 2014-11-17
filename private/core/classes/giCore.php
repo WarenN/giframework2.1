@@ -8,13 +8,13 @@ class giCore {
 	protected $Includes;
 	protected $Runtimes;
 	
-	protected $Logger;
-	protected $Response;
-	protected $Router;
-	protected $Database;
-	protected $Debug;
-	protected $Localization;
-	protected $Security;
+	public $Logger;
+	public $Response;
+	public $Router;
+	public $Database;
+	public $Debug;
+	public $Localization;
+	public $Security;
 	
 	// main constructor from where everything starts
 	public function __construct() {

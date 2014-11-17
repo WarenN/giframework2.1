@@ -820,7 +820,7 @@ class giResponse {
 	}
 
 	// set meta tags
-	private function setMeta($meta_tags=array()) {
+	public function setMeta($meta_tags=array()) {
 		
 		// for each provided tag
 		foreach($meta_tags as $aMetaKey => $aMetaValue) {
