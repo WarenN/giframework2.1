@@ -8,6 +8,14 @@ class giCore {
 	protected $Includes;
 	protected $Runtimes;
 	
+	protected $Logger;
+	protected $Response;
+	protected $Router;
+	protected $Database;
+	protected $Debug;
+	protected $Localization;
+	protected $Security;
+	
 	// main constructor from where everything starts
 	public function __construct() {
 		
@@ -20,16 +28,21 @@ class giCore {
 		$this->initEnvironment();
 		$this->initConfiguration();
 
-		$giLogger			= new giLogger();						// logging tool
-		$giResponse 		= new giResponse();						// output formatting tool
-		$giRouter			= new giRouter();						// handles routing of requests
-		$giDatabase			= new giDatabase(); 					// database abstraction layer
-		$giDebug			= new giDebug();						// debugging helper
-		$giLocalization		= new giLocalization(); 				// help translating
-		$giSecurity			= new giSecurity(); 					// security handler
+		$this->Logger			= new giLogger();						// logging tool
+		$this->Response 		= new giResponse();						// output formatting tool
+		$this->Router			= new giRouter();						// handles routing of requests
+		$this->Database			= new giDatabase(); 					// database abstraction layer
+		$this->Debug			= new giDebug();						// debugging helper
+		$this->Localization		= new giLocalization(); 				// help translating
+		$this->Security			= new giSecurity(); 					// security handler
+		
+		// configure the router
+		$this->Router->setConfiguration(
+			$this->Configuration['response']['enable_cache']
+		);
 		
 		// configure the database
-		$giDatabase->setConfiguration(
+		$this->Database->setConfiguration(
 			$this->Configuration['database']['driver'],
 			$this->Configuration['database']['database'],
 			$this->Configuration['database']['username'],
@@ -41,17 +54,26 @@ class giCore {
 		);
 		
 		// configure the security
-		$giSecurity->setConfiguration(
+		$this->Security->setConfiguration(
 			$this->Configuration['routing']['home_url'],
 			$this->Configuration['routing']['login_url'],
 			$this->Configuration['routing']['logout_url']
 		);
 		
 		// configure the localization
-		$giLocalization->setConfiguration(
+		$this->Localization->setConfiguration(
 			$this->Configuration['localization']['available_languages'],
 			$this->Configuration['localization']['default_language'],
 			$this->Configuration['localization']['default_locales']
+		);
+		
+		// configure the response
+		$this->Response->setConfiguration(
+			$this->Configuration['response'],
+			$this->Configuration['assets'],
+			$this->Configuration['meta_tags'],
+			$this->Configuration['start_time'],
+			$this->Environment
 		);
 
 		// if the environment is prod and a global cache file exists
@@ -204,20 +226,29 @@ class giCore {
 			
 		}
 
+		var_dump($this->Router);
+		die();
 
-		var_dump($this->Configuration,$giSecurity,$giLocalization,$giDatabase);
+		// debug
+		//$this->Response->setContent(array($this->Configuration,$giSecurity,$giLocalization,$giDatabase));
+		$this->Response->setContent('Hello world');
 		
 		// start caching the output
 		ob_start();
 		
 		// once everything is ready we dispatch the request to the proper controller/view/response
-		$giRouter->dispatch();
+		$this->Router->dispatch();
 		
-		// use gargabe collection to set the content
-		$giResponse->setContent(ob_get_clean());
+		// if no content has been set by controller/view
+		if(!$this->Response->getContent()) {
 		
-		// if the controller didn't already handle it own output, ask the giResponse to format it
-		$giResponse->output(); 
+			// use gargabe collection to set the content
+			$this->Response->setContent(ob_get_clean());
+		
+		}
+		
+		// if the controller didn't already handle its own output, ask the giResponse to format it
+		$this->Response->output(); 
 	
 	}
 	

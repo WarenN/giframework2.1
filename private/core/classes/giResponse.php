@@ -11,6 +11,7 @@ class giResponse {
 	protected $Headers;				// all headers in this array
 	protected $Checksum;			// if the checksum is enabled
 	protected $ExecutionTime;		// stores the execution time
+	protected $StartTime;			// stores the start time
 	protected $Formatted;			// if the content has been formated already
 	protected $Caching;				// if the browser is allowed to cache this
 	protected $Freeze;				// number or hours the file should be cached locally 
@@ -21,62 +22,44 @@ class giResponse {
 	protected $Content;				// handle the page content
 	protected $Javascripts;			// handle the list of javascript files
 	protected $Stylesheets;			// handle the list of css files
-	protected $Title;				// handle the page title
-	protected $Description;			// handle the page description
-	protected $Keywords;			// handle the page keywords
-	protected $Language;			// handle the page language
-	protected $Copyright;			// handle the page copyright
-	protected $Author;				// handle the page author
-	protected $Company;				// handle the page company
-	protected $RevisitAfter;		// handle the page meta revisit
-	protected $RobotRule;			// handle the robot rules
-	protected $Position;			// handle the page geo position
-	protected $Placename;			// handle the page geo placename
-	protected $Region;				// handle the page geo region
-	protected $googleAnalyticsId;	// handle the google analytics id
-	protected $googleSiteVerification;
+	protected $Meta;				// handle the meta tags
 
 	public function __construct() {
 		$this->Formatted	= false; 	// the content is not formatted until it is!
-		$this->Caching		= true; 	// default is to authorize browser to cache content
+		$this->BrowserCache = true; 	// default is to authorize browser to cache content
+		$this->Cache		= false;	// default is to not cache the output
 		$this->Charset		= 'utf-8'; 	// default encoding is always UTF8
 		$this->Obfuscate	= false;	// default is not to obfuscate
 		$this->Indent		= false;	// default is not to indent either
 		$this->Checksum		= false;	// default is to disable checksum as it's resource consuming
 		$this->Headers		= array();	// default is no headers at all
+		$this->Meta			= array();	// default is no meta tags
 		$this->Freeze		= false;	// default is to not freeze the output at all
 	}
 	
-	// this methods allows to preconfigure a document using an object of class giConfiguration
-	public function autoConfigure($giConfiguration) {
-
-		// get the whole configuration
-		$giConfigurationArray			= $giConfiguration->getConfiguration();
-	
-		// general output parameters	
-		$this->Obfuscate				= (boolean)	$giConfiguration->isObfuscationEnabled();
-		$this->Indent					= (boolean)	$giConfiguration->isIndentationEnabled();
-		$this->Environment				= (string)	$giConfiguration->getEnvironment();
+	// this methods set the default configuration
+	public function setConfiguration($response=array(),$assets=array(),$meta=array(),$start_time,$environment) {
 		
-		// set default meta options
-		$this->Title					= $giConfigurationArray['pageTitle'];
-		$this->Description				= $giConfigurationArray['pageDescription'];
-		$this->Keywords					= $giConfigurationArray['pageKeywords'];
-		$this->Language					= $giConfigurationArray['pageLanguage'];
-		$this->Author					= $giConfigurationArray['pageAuthor'];
-		$this->Copyright				= $giConfigurationArray['pageCopyright'];
-		$this->Company					= $giConfigurationArray['pageCompany'];
-		$this->RevisitAfter				= $giConfigurationArray['pageRevisitRate'];
-		$this->RobotRule				= $giConfigurationArray['pageRobotRule'];
-		$this->Position					= $giConfigurationArray['pageGeoPosition'];
-		$this->Placename				= $giConfigurationArray['pageGeoPlacename'];
-		$this->Region					= $giConfigurationArray['pageGeoRegion'];
-		$this->googleSiteVerification	= $giConfigurationArray['pageGoogleSiteVerification'];
-		$this->googleAnalyticsId		= $giConfigurationArray['pageGoogleAnalyticsId'];
-
 		// set default JS and CSS
-		$this->setJs($giConfigurationArray['pageJavascript']);
-		$this->setCss($giConfigurationArray['pageStylesheets']);
+		$this->setJs($assets['js']);
+		$this->setCss($assets['css']);
+		
+		// set default meta tags
+		$this->setMeta($meta);
+		
+		// set default parameters
+		$this->Indent 		= (boolean) $response['enable_indentation'];
+		$this->Checksum 	= (boolean) $response['enable_checksum'];
+		$this->Obfuscate 	= (boolean) $response['enable_obfuscation'];
+		$this->Compress 	= (boolean) $response['enable_compression'];
+		$this->Cache 		= (boolean) $response['enable_cache'];
+		$this->Type 		= (string) 	$response['default_type'];
+		
+		// set environment
+		$this->Environment = $environment;
+		
+		// set start time
+		$this->StartTime = $start_time;
 		
 	}
 	
@@ -96,7 +79,7 @@ class giResponse {
 				if($this->Redirect and $this->Delay) {
 				
 					// build the redirection meta tag	
-					$redirectionMetaTag = "\n\t\t".'<meta http-equiv="refresh" content="'.$this->Delay.'; url='.$this->Redirect.'">';
+					$redirectionMetaTag = '<meta http-equiv="refresh" content="'.$this->Delay.'; url='.$this->Redirect.'">';
 					
 				}
 				
@@ -112,31 +95,24 @@ class giResponse {
 				$this->setHeader('Content-type','text/html; charset='.$this->getCharset());
 				
 				// build the page
-				$this->setContent('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-	<html xmlns="http://www.w3.org/1999/xhtml">
-	<head>
-		<meta http-equiv="content-type" content="text/html; charset='.$this->getCharset().'" />'.$redirectionMetaTag.'
-'.$this->buildTitle().'
-'.$this->buildMeta('title',						$this->getTitle()).'
-'.$this->buildMeta('description',				$this->getDescription()).'
-'.$this->buildMeta('keywords',					$this->getKeywords()).'
-'.$this->buildMeta('language',					$giLocalization->getLanguage()).'
-'.$this->buildMeta('copyright',					$this->getCopyright()).'
-'.$this->buildMeta('author',					$this->getAuthor()).'
-'.$this->buildMeta('company',					$this->getCompany()).'
-'.$this->buildMeta('robots',					$this->getRobotRule()).'
-'.$this->buildMeta('revisit-after',				$this->getRevisitAfter()).'
-'.$this->buildMeta('geo.position',				$this->getPosition()).'
-'.$this->buildMeta('geo.placename',				$this->getPlacename()).'
-'.$this->buildMeta('geo.region',				$this->getRegion()).'
-'.$this->buildMeta('google-site-verification',	$this->getGoogleSiteVerification()).'
+				$temporaryContent = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="content-type" content="text/html; charset='.$this->getCharset().'" />'.$redirectionMetaTag;
+		
+				// for each meta tag
+				foreach($this->Meta as $aMetaKey => $aMetaValue) {
+					
+					// build the meta
+					$temporaryContent .= $this->buildMeta($aMetaKey,$aMetaValue);
+					
+				}
+				
+				// actual content
+				$temporaryContent .= '</head><body>'.$this->getContent().'</body></html>';		
+				
+				$this->setContent($temporaryContent);
+/*
 '.$this->buildStylesheets().'
 '.$this->buildJavascript().'
-	</head>
-	<body>
-'.$this->getContent().'
-	</body>
-</html>');
+*/
 				// if we want to indent the code
 				if($this->Indent == true) {
 					// indent it
@@ -330,7 +306,7 @@ class giResponse {
 		}
 		
 		// if cache is disabled -> specify Cache-control headers
-		if(!$this->Caching) {
+		if(!$this->BrowserCache) {
 		
 			// output specific headers
 			$this->setHeader('Cache-Control','must-revalidate, post-check=0, pre-check=0');
@@ -338,10 +314,10 @@ class giResponse {
 		}
 			
 		// set content language
-		$this->setHeader('Content-Language',$giLocalization->getLanguage());
+		//$this->setHeader('Content-Language',$giLocalization->getLanguage());
 		
 		// compute the final execution time
-		$this->ExecutionTime = round(microtime(true) - $giConfiguration->getStartTime(),3).' sec';
+		$this->ExecutionTime = round(microtime(true) - $this->StartTime,3).' sec';
 
 		// set in header
 		$this->setHeader('X-Execution-Time',$this->ExecutionTime);
@@ -376,26 +352,25 @@ class giResponse {
 		global $giConfiguration, $giRequest, $giDebug, $giAuthentication;
 		
 		// compute the final execution time
-		$this->ExecutionTime = round(microtime(true) - $giConfiguration->getStartTime(),3).' sec';
+		$this->ExecutionTime = round(microtime(true) - giCore::get('start_time'),3).' sec';
 		
 		// if type is html AND debug is enabled in the config AND debug enabled by the request
-		if($this->Type == 'html' and $giConfiguration->isDebugEnabled() and $giRequest->isDebugEnabled()) {
-			
+		if($this->Type == 'html' and $this->Debug and giRouter::hasDebug()) {
 			
 			// add the debugging code to the actual content
-			$this->Content .= $giDebug->getDebugHTML();
+			//$this->Content .= $giDebug->getDebugHTML();
 			
 		}
 		// if content is an array and debug is enabled
-		elseif(is_array($this->Content)  and $giConfiguration->isDebugEnabled() and $giRequest->isDebugEnabled()) {
+		elseif(is_array($this->Content)  and $this->Debug and giRouter::hasDebug()) {
 	
 			// push the debug elements
-			$this->Content['debug'] = $giDebug->getDebugArray();
+			//$this->Content['debug'] = $giDebug->getDebugArray();
 			
 		}
 
 		// if type is html and a google tracking id is set and we're in production
-		if($this->Type == 'html' and $this->googleAnalyticsId and $giConfiguration->getEnvironment() == 'prod') {
+		if($this->Type == 'html' and $this->googleAnalyticsId and $this->Environment == 'prod') {
 
 			// push the tracking code
 			$this->Content .= $this->getTrackerCode();
@@ -535,7 +510,7 @@ class giResponse {
 		global $giConfiguration,$giRequest;
 		
 		// if the configuration authorizes it
-		if($giConfiguration->isCompressionEnabled() and $giRequest->isCompressionEnabled()) {
+		if($this->Compress) {
 			
 			// gzip the content
 			$this->setContent(gzencode($this->getContent()));
@@ -585,9 +560,9 @@ class giResponse {
 	}
 	
 	// set specific headers to force browser not to cache the output
-	public function disableCache() {
+	public function disableBrowserCache() {
 		// set the cache as disabled
-		$this->Caching = false;
+		$this->BrowserCache = false;
 	}
 		
 	// enable MD5 checksum output in headers
@@ -609,7 +584,7 @@ class giResponse {
 		ob_get_clean();
 		
 		// force disable cache
-		$this->disableCache();
+		$this->disableBrowserCache();
 		
 		// set type text
 		$this->setType('text');
@@ -632,7 +607,7 @@ class giResponse {
 		ob_get_clean();
 		
 		// force disable cache
-		$this->disableCache();
+		$this->disableBrowserCache();
 		
 		// set type text
 		$this->setType('text');
@@ -655,7 +630,7 @@ class giResponse {
 		ob_get_clean();
 		
 		// force disable cache
-		$this->disableCache();
+		$this->disableBrowserCache();
 		
 		// set type text
 		$this->setType('text');
@@ -678,7 +653,7 @@ class giResponse {
 		ob_get_clean();
 		
 		// force disable cache
-		$this->disableCache();
+		$this->disableBrowserCache();
 		
 		// set type text
 		$this->setType('text');
@@ -701,7 +676,7 @@ class giResponse {
 		ob_get_clean();
 		
 		// force disable cache
-		$this->disableCache();
+		$this->disableBrowserCache();
 		
 		// set type text
 		$this->setType('text');
@@ -721,6 +696,8 @@ class giResponse {
 	public function redirect($destination) {
 		// purge the buffer
 		ob_get_clean();
+		// force disable cache
+		$this->disableBrowserCache();
 		// hard location
 		header('Location: '.$destination);
 		// stop execution
@@ -758,11 +735,8 @@ class giResponse {
 	// this method will freeze the generated content if caching is enabled
 	private function freezeContent() {
 		
-		// access the request
-		global $giRequest,$giConfiguration;
-		
 		// if caching is disabled or an error occured
-		if(!$giConfiguration->isCachingEnabled()) {
+		if(!$this->Cache) {
 		
 			// stop here
 			return;
@@ -782,7 +756,7 @@ class giResponse {
 			$this->setHeader('X-Cached-Until',date('r',time()+intval($this->Freeze)*3600));
 			
 			// generate a signature
-			$aSignature = $giRequest->getSignature();
+			$aSignature = giRouter::getSignature();
 		
 			// put the content in the cache
 			file_put_contents('../private/data/cache/output/'.$aSignature.'.raw',$this->getContent());
@@ -801,8 +775,17 @@ class giResponse {
 	}
 	
 	private function buildMeta($metaName,$metaValue) {
-		$output =  "\t\t".'<meta name="'.$metaName.'" content="'.$metaValue.'" />';
-		return($output);
+		// if a meta value is set
+		if($metaValue) {
+			// build the meta
+			return('<meta name="'.$metaName.'" content="'.$metaValue.'" />');
+		}
+		// no meta value is set
+		else {
+			// nothing to return
+			return('');
+		}
+		
 	}
 
 	private function buildJavascript() {
@@ -824,7 +807,7 @@ class giResponse {
 	}
 	
 	private function buildTitle() {
-		return("\t\t".'<title>'.$this->getTitle().'</title>');
+		return("\t\t".'<title>'.$this->Meta['title'].'</title>');
 	}
 	
 	private function isNotNull($aString) {
@@ -836,76 +819,20 @@ class giResponse {
 		}
 	}
 
-	public function setTitle($Title) {
-		if($this->isNotNull($Title)) {
-			if($this->isNotNull($this->Title)) {
-				$this->Title = (string)	$Title . ' - ' . $this->Title;
-			}
-			else {
-				$this->Title = (string)	$Title;
-			}
-				
+	// set meta tags
+	private function setMeta($meta_tags=array()) {
+		
+		// for each provided tag
+		foreach($meta_tags as $aMetaKey => $aMetaValue) {
+			
+			// set the tag with it key
+			$this->Meta[$aMetaKey] = $aMetaValue;
+			
 		}
+		
 	}
-	public function getTitle() {
-		return(strip_tags($this->Title));
-	}
-	public function setDescription($Description) {
-		if($this->isNotNull($Description)) {
-			$this->Description = (string)	$Description;
-		}	
-	}
-	public function getDescription() {
-		return(strip_tags($this->Description));
-	}
-	public function setKeywords($Keywords) {
-		if($this->isNotNull($Keywords)) {
-			$this->Keywords = (string)	$Keywords;
-		}	
-	}
-	public function getKeywords() {
-		return(strip_tags($this->Keywords));
-	}
-	public function setLanguage($Language) {
-		if($this->isNotNull($Language)) {
-			$this->Language = (string)	$Language;
-		}
-	}
-	public function setCopyright($Copyright) {
-		if($this->isNotNull($Copyright)) {
-			$this->Copyright = (string)	$Copyright;	
-		}	
-	}
-	public function getCopyright() {
-		return(strip_tags($this->Copyright));
-	}
-	public function setAuthor($Author) {
-		if($this->isNotNull($Author)) {
-			$this->Author = (string)	$Author;	
-		}	
-	}
-	public function getAuthor() {
-		return(strip_tags($this->Author));
-	}
-	public function setCompany($Company) {
-		if($this->isNotNull($Company)) {
-			$this->Company = (string)	$Company;
-		}
-	}
-	public function getCompany() {
-		return(strip_tags($this->Company));
-	}
-	public function setRevisitAfter($RevisitRate) {
-		if($this->isNotNull($RevisitRate)) {
-			$this->RevisitAfter = $RevisitRate;	
-		}	
-	}
-	public function getRevisitAfter() {
-		return(strip_tags($this->RevisitAfter));
-	}
-	public function getGoogleSiteVerification() {
-		return($this->googleSiteVerification);
-	}
+	
+	
 	public function setDebugCode($debugCode) {
 		if($this->isNotNull($debugCode)) {
 			$this->Obfuscate	= (boolean)	false;
@@ -925,7 +852,8 @@ class giResponse {
 	}
 	
 	public function addContent($Content) {
-		
+		// force adding content
+		$this->Content .= $Content;
 	}
 	
 	public function getContent() {
@@ -933,42 +861,6 @@ class giResponse {
 		return($this->Content);		
 	}
 	
-	public function setRobotRule($pageRobotRule) {
-		if($this->isNotNull($pageRobotRule)) {
-			$this->RobotRule = $pageRobotRule;	
-		}	
-	}
-	public function getRobotRule() {
-		return(strip_tags($this->RobotRule));	
-	}
-
-	public function setPosition($Position) {
-		if($this->isNotNull($Position)) {
-			$this->Position = $Position;	
-		}	
-	}
-	public function getPosition() {
-		return(strip_tags($this->Position));
-	}
-	
-	public function setPlacename($Placename) {
-		if($this->isNotNull($Placename)) {
-			$this->Placename = $Placename;	
-		}	
-	}
-	public function getPlacename() {
-		return(strip_tags($this->Placename));
-	}
-	
-	public function setRegion($Region) {	
-		if($this->isNotNull($Region)) {
-			$this->Region = $Region;	
-		}	
-	}
-	public function getRegion() {
-		return(strip_tags($this->Region));
-	}
-
 	public function setJs($pageJs) {
 		if(is_array($pageJs) and count($pageJs) > 0) {
 			foreach($pageJs as $aJsFile) {

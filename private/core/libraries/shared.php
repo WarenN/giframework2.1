@@ -62,12 +62,14 @@ function giComponent($component) {
 	include('../private/core/components/'.$component.'.php');
 }
 
-
+/*
 // return a string for the specified key, depending on the current language
 function giStringFor($localeKey) {
 	global $giLocalization;
+	var_dump($giLocalization,$giCore,$giSecurity);
 	return($giLocalization->getLocale($localeKey));
 }
+*/
 
 // if the method is post
 function giIsMethodPost() {

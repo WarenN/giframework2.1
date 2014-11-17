@@ -1,5 +1,7 @@
 <?php
 
+echo 'Hello World !';
+
 class TestController extends giController {
 	
 	

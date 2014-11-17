@@ -6,17 +6,30 @@ class giRouter {
 	protected $Method;
 	protected $Headers;
 	protected $Parameters;
-	protected $Signature;
 	protected $Routes;
+	protected $Cache;
 	protected $Cli;
+	static protected $Signature;
 		
 	public function __construct() {
 		
+		// check for cached request
+		$this->checkCache();
+		
+		// set request informations
 		$this->Request 			= (string)	$_SERVER['REQUEST_URI'];
 		$this->Method			= (string)	$_SERVER['HTTP_METHOD'];
 		$this->Headers			= array();
 		$this->Parameters		= array();
 		$this->Routes			= array();
+		
+	}
+	
+	// set the configuration
+	public function setConfiguration($cache=false) {
+		
+		// set we enable cache
+		$this->Cache = (boolean) $cache;
 		
 	}
 	
@@ -57,10 +70,46 @@ class giRouter {
 		
 	}
 	
+	public function runtime($data,$controller) {
+		
+	}
+	
 	// dispatch Request to the proper controller
 	public function dispatch() {
 		
 		
+		
+		$this->parseRequest();
+		
+		
+	}
+	
+	private function checkCache() {
+	
+		// if we are not running in production
+		if(!$this->Cache) {
+			// stop here
+			return;
+		}
+		// check for the presence of a file
+		if(file_exists('../private/data/cache/output/'.giRoute::getSignature().'.raw')) {
+			// if the cached file is still valid
+			if(filemtime('../private/data/cache/output/'.giRoute::getSignature().'.raw') > time()) {
+				// for each cached headers
+				foreach(json_decode(file_get_contents('../private/data/cache/output/'.giRoute::getSignature().'.json'),true) as $aHeaderKey => $aHeaderValue) {
+					// output the header
+					header("{$aHeaderKey}: {$aHeaderValue}");
+				}
+				// output the cached file and die
+				die(file_get_contents('../private/data/cache/output/'.giRoute::getSignature().'.raw'));	
+			}
+			// the file is not valid anymore
+			else {
+				// remove the cached files
+				unlink('../private/data/cache/output/'.giRoute::getSignature().'.raw');
+				unlink('../private/data/cache/output/'.giRoute::getSignature().'.json');
+			}	
+		}
 		
 	}
 	
@@ -74,6 +123,37 @@ class giRouter {
 		
 	}
 
+	// get the unique signature of a request
+	public static function getSignature() {
+	
+		// if no signature is available
+		if(!$this->Signature) {
+			// if post has data
+			if(count($_POST) > 0) {
+				// generate a signature including post data
+				return(substr(sha1($this->rawRequest.var_export($_POST,true)),0,16));
+			}
+			// post has no data
+			else {
+				// generate the signature
+				return(substr(sha1($this->rawRequest),0,16));
+			}
+		}
+		// a signature is already available
+		else {
+			// return the already generated signature
+			return($this->Signature);
+		}
+		
+	}
+	
+	// if debug tag is present in the url
+	public static function hasDebug() {
+	
+		return(false);
+		
+	}
+	
 }
 
 

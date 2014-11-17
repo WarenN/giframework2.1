@@ -3,27 +3,16 @@
 class giController {
 	
 	// references to useful objects
-	protected $Router;
-	protected $Database;
-	protected $Security;
-	protected $Response;
-	protected $Configuration;
+	protected $Core;
 	
 	// actual data required by the view
 	protected $Data;
 	
 	// prepare controller environment
-	public function __construct() {
+	public function __construct(&$giCore) {
 	
-		// access global elements
-		global $giRouter,$giDatabase,$giSecurity,$giResponse,$giConfiguration;
-		
 		// give access to useful objects
-		$this->Router 			= &$giRouter;
-		$this->Database 		= &$giDatabase;
-		$this->Security 		= &$giSecurity;
-		$this->Response 		= &$giResponse;
-		$this->Configuration 	= &$giConfiguration;
+		$this->Core 			= &$giCore;
 		
 		// data passed to the view
 		$this->Data				= null;
