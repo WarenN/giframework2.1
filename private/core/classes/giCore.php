@@ -38,7 +38,8 @@ class giCore {
 		
 		// configure the router
 		$this->Router->setConfiguration(
-			$this->Configuration['response']['enable_cache']
+			$this->Configuration['response']['enable_cache'],
+			$this->Configuration['routing']['not_found_url']
 		);
 		
 		// configure the database
@@ -238,12 +239,6 @@ class giCore {
 		// include the proper script in its own environment
 		$this->sandbox($routed_script,$routed_class);
 		
-		// instanciate the proper class
-		
-		
-		// call default action
-		
-		
 		// if no content has been set by controller/view
 		if(!$this->Response->getContent()) {
 		
@@ -264,7 +259,7 @@ class giCore {
 		require($routed_script);
 		
 		// instanciate
-		$controller = new TestController($this);
+		$controller = new $routed_class($this);
 		
 		// call the default
 		$controller->defaultAction();

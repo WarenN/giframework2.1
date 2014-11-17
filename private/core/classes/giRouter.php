@@ -49,10 +49,13 @@ class giRouter {
 	}
 	
 	// set the configuration
-	public function setConfiguration($cache=false) {
+	public function setConfiguration($cache,$missing) {
 		
-		// set we enable cache
+		// if we enable cache
 		$this->Cache = (boolean) $cache;
+		
+		// set the missing page url
+		$this->Missing = $missing;
 		
 	}
 	
@@ -107,6 +110,8 @@ class giRouter {
 		$this->checkURL();
 		// check controller
 		$this->checkController();
+		// check script
+		$this->checkScript();
 		// check method
 		$this->checkMethod();
 		// check parameters
@@ -149,6 +154,8 @@ class giRouter {
 				$this->Options = $aRouteOptions;
 				// get plugin and controller
 				list($this->Plugin,$this->Controller) = explode('/',$aRouteOptions['mapto']);
+				// set the class name
+				$this->Class = str_replace(' ','',ucwords(strtolower(str_replace('-',' ',$this->Controller))).'Controller');
 				// we found the requested page in the sitemap so we set the proper handler
 				$this->Script = '../private/plugins/'.$this->Plugin.'/controllers/'.$this->Controller.'.php';
 				// this is it
@@ -160,12 +167,40 @@ class giRouter {
 				$this->Options = $aRouteOptions;
 				// get plugin and controller
 				list($this->Plugin,$this->Controller) = explode('/',$aRouteOptions['mapto']);
+				// set the class name
+				$this->Class = str_replace(' ','',ucwords(strtolower(str_replace('-',' ',$this->Controller))).'Controller');
 				// we found the requested page in the sitemap so we set the proper handler
 				$this->Script = '../private/plugins/'.$this->Plugin.'/controllers/'.$this->Controller.'.php';
 				// this is it
 				return;
 			}
 		}
+		
+	}
+	
+	// check if the script has been found or actually exists
+	private function checkScript() {
+	
+		
+		// we did not find the page in the sitemap 
+		if(!$this->Script) {
+			// clean the buffer
+			ob_get_clean();
+			// output a 404 header
+			header('HTTP/1.1 404 Not Found');
+			// set the url as 404
+			$this->Request = $this->Missing;
+			// retry
+			$this->checkController();
+			// if the script doesn't exist
+			if(!file_exists($this->Script)) {
+				// exeception
+				Throw new Exception('giRouter->checkScript() : missing controller script');	
+			}
+			// stop here
+			return;
+		}
+		
 	}
 	
 	private function checkMethod() {
@@ -175,6 +210,16 @@ class giRouter {
 	
 	private function checkParameters() {
 		
+		/*
+		// get and set all parameters
+		$this->Parameters	= (array)	explode('/',substr($this->Request,1));
+		// remove static part
+		$requestParameters			= (string)	str_replace($staticPartOfThePage,'',$this->requestedScript);
+		// get and set dynamic parameters
+		$this->requestParameters	= (array)	explode('/',$requestParameters);
+		// the requested script being the url without dynamic parameters
+		$this->requestedScript		= (string)	$staticPartOfThePage;
+		*/
 		
 	}
 	

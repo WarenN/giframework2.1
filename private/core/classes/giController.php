@@ -2,11 +2,12 @@
 
 class giController {
 	
-	// references to useful objects
+	// references to core object
 	public $Core;
 	
 	// actual data required by the view
 	public $Data;
+	public $View;
 	
 	// prepare controller environment
 	public function __construct(&$giCore) {
