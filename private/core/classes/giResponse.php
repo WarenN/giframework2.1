@@ -105,6 +105,12 @@ class giResponse {
 					
 				}
 				
+				// build stylesheets
+				$temporaryContent .= $this->buildStylesheets();
+				
+				// build javascript
+				$temporaryContent .= $this->buildJavascript();
+				
 				// actual content
 				$temporaryContent .= '</head><body>'.$this->getContent().'</body></html>';		
 				
@@ -792,7 +798,7 @@ class giResponse {
 		$this->Javascripts = array_unique($this->Javascripts);
 		$output = '';
 		foreach($this->Javascripts as $aJsFile) {
-			$output .= "\t\t".'<script type="text/javascript" src="'. $aJsFile .'"></script>'."\n";
+			$output .= '<script type="text/javascript" src="'. $aJsFile .'"></script>';
 		}	
 		return($output);
 	}
@@ -801,13 +807,13 @@ class giResponse {
 		$this->Stylesheets = array_unique($this->Stylesheets);
 		$output = '';
 		foreach($this->Stylesheets as $aCssFile) {
-			$output .= "\t\t".'<link rel="stylesheet" media="all" type="text/css" href="'.$aCssFile.'" />'."\n";
+			$output .= '<link rel="stylesheet" media="all" type="text/css" href="'.$aCssFile.'" />';
 		}
 		return($output);
 	}
 	
 	private function buildTitle() {
-		return("\t\t".'<title>'.$this->Meta['title'].'</title>');
+		return('<title>'.$this->Meta['title'].'</title>');
 	}
 	
 	private function isNotNull($aString) {

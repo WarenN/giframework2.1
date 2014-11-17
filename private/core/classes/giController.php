@@ -21,18 +21,24 @@ class giController {
 	}
 	
 	// pass to a specific view
-	public function View($template) {
+	public function view($view_name) {
 		
 		// include the specific template
+		$view_path = '../private/plugins/'.$this->Core->Router->Plugin.'/views/'.$view_name.'.php';
 		
-		// pass it the $this->Data
+		// if the view doesn't exist
+		if(!file_exists($view_path)) {
+		
+			// exception
+			Throw new Exception('giController->view() : missing view script ['.$view_path.']');	
 			
-	}
-	
-	public function __destruct() {
-	
-		
-		
+		}
+		// the view exists
+		else {
+			// include it
+			include($view_path);
+		}
+			
 	}
 	
 }

@@ -14,13 +14,13 @@ class giRouter {
 	protected $Cli;
 	
 	// specific to the current route
-	protected $Plugin;
-	protected $Controller;
-	protected $Script;
-	protected $Class;
-	protected $Action;
-	protected $Options;
-	protected $Parameters;
+	public $Plugin;
+	public $Controller;
+	public $Script;
+	public $Class;
+	public $Action;
+	public $Options;
+	public $Parameters;
 	
 	// specific to the current request
 	static protected $Compression;
@@ -43,8 +43,8 @@ class giRouter {
 		$this->Script			= null;
 		$this->Class			= null;
 		$this->Headers			= array();
-		$this->Parameters		= array();
 		$this->Routes			= array();
+		$this->Parameters		= new stdClass();
 		
 	}
 	
@@ -194,8 +194,8 @@ class giRouter {
 			$this->checkController();
 			// if the script doesn't exist
 			if(!file_exists($this->Script)) {
-				// exeception
-				Throw new Exception('giRouter->checkScript() : missing controller script');	
+				// exception
+				Throw new Exception('giRouter->checkScript() : missing controller script ['.$this->Script.']');
 			}
 			// stop here
 			return;
@@ -210,17 +210,35 @@ class giRouter {
 	
 	private function checkParameters() {
 		
-		/*
-		// get and set all parameters
-		$this->Parameters	= (array)	explode('/',substr($this->Request,1));
-		// remove static part
-		$requestParameters			= (string)	str_replace($staticPartOfThePage,'',$this->requestedScript);
-		// get and set dynamic parameters
-		$this->requestParameters	= (array)	explode('/',$requestParameters);
-		// the requested script being the url without dynamic parameters
-		$this->requestedScript		= (string)	$staticPartOfThePage;
-		*/
-		
+		// if no parameter were specified at routing time
+		if(!$this->Options['parameters']) {
+			// nothing special to do about it
+			return;
+		}
+		// we have url parameters to handle
+		else {
+			// remove static portion of the url
+			$temporary_url = str_replace($this->Options['parameters'][0],'',$this->Request);
+			// explode the url parameters
+			$request_parameters = explode('/',$temporary_url);
+			// remove static portion from parameters keys
+			unset($this->Options['parameters'][0]);
+			// for each parameter key
+			foreach($this->Options['parameters'] as $aParameterPosition => $aParameterKey) {
+				// parameter clean name
+				$parameter_name = ucfirst(trim($aParameterKey,'/'));
+				// if said parameter has a value
+				if(strlen($request_parameters[$aParameterPosition-1]) > 0) {
+					// set the parameter
+					$this->Parameters->$parameter_name = $request_parameters[$aParameterPosition-1];
+				} 
+				// parameter has no value or is missing
+				else {
+					// set as null
+					$this->Parameters->$parameter_name = null;
+				}
+			}
+		}		
 	}
 	
 	
