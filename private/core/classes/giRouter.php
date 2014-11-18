@@ -19,6 +19,7 @@ class giRouter {
 	public $Script;
 	public $Class;
 	public $Action;
+	public $Function;
 	public $Options;
 	public $Parameters;
 	
@@ -39,6 +40,7 @@ class giRouter {
 		$this->Options			= null;
 		$this->Plugin			= null;
 		$this->Action			= null;
+		$this->Function			= null;
 		$this->Controller		= null;
 		$this->Script			= null;
 		$this->Class			= null;
@@ -118,6 +120,8 @@ class giRouter {
 		$this->checkSecurity();
 		// check parameters
 		$this->checkParameters();
+		// check action
+		$this->checkAction();
 
 	}
 	
@@ -248,6 +252,20 @@ class giRouter {
 		}		
 	}
 	
+	private function checkAction() {
+		
+		// if an action parameter exists
+		if($this->Parameters->Action) {
+			// set the name of the associated method
+			$this->Function = $this->Parameters->Action.'Action';
+		}
+		// else no action parameter is given we fallback to indexAction
+		else {
+			// indexAction is the default for all controller
+			$this->Function = 'indexAction';	
+		}
+		
+	}
 	
 	private function checkCache() {
 	
@@ -356,21 +374,5 @@ class giRouter {
 	}
 	
 }
-
-
-/*
-
-class based on plugin name
-
-PluginAction
-
-then 
-->defaultAction()
-
-or if $_POST['action'] -> createAction() // for example
-or if :action -> creationAction // for example
-
-
-*/
 
 ?>

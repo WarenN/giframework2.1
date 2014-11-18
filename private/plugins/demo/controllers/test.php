@@ -8,25 +8,13 @@
 class TestController extends giController {
 	
 	
-	public function defaultAction() {
+	public function indexAction() {
 	
-		
-		switch($this->Core->Router->Parameters->Action) {
-		
-			case 'formating-test':
-				$this->formatAction();
-			break;
-			
-			case 'debug':
-				$this->debugAction();
-			break;
-		
-			default;	
-		}
+		$this->debugAction();
 		
 	}
 	
-	private function formatAction() {
+	public function formatAction() {
 	
 		/*
 		call this page with /demo/formating-test/json/
@@ -48,8 +36,8 @@ class TestController extends giController {
 	
 	private function debugAction() {
 	
-		//var_dump($this->Core->Router);
-		//die();
+		var_dump($this->Core->Router);
+		die();
 		
 	}
 	

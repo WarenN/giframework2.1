@@ -7,6 +7,7 @@ class giCore {
 	protected $Environment;
 	protected $Includes;
 	protected $Runtimes;
+	protected $Controller;
 	
 	public $Logger;
 	public $Response;
@@ -277,10 +278,18 @@ class giCore {
 		require($this->Router->Script);
 		
 		// instanciate the class associated to the controller
-		$controller = new $this->Router->Class($this);
+		$this->Controller = new $this->Router->Class($this);
 		
-		// call the default if no :action and no $_POST['action']
-		$controller->defaultAction();
+		// if method doesn't exist
+		if(!method_exists($this->Controller,$this->Router->Function)) {
+		
+			// throw an exception
+			Throw new Exception('giCore->sandbox() : Method ['.$this->Router->Class.'/'.$this->Router->Function.'] does not exist');
+			
+		}
+		
+		// execute the routed method indexAction is no :action pr $_POST['action'] provided
+		$this->Controller->{$this->Router->Function}();
 		
 	}
 	

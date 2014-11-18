@@ -3,7 +3,7 @@
 class IndexController extends giController {
 	
 	
-	public function defaultAction() {
+	public function indexAction() {
 		
 		// pass to view
 		$this->view('index');

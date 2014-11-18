@@ -2,7 +2,7 @@
 
 class InfoLegalesController extends giController {
 	
-	public function defaultAction() {
+	public function indexAction() {
 		
 		//$this->Core->Response->error500();
 		

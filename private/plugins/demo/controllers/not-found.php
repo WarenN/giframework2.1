@@ -2,7 +2,7 @@
 
 class NotFoundController extends giController {
 	
-	public function defaultAction() {
+	public function indexAction() {
 		
 		$this->Core->Response->setMeta(array('title'=>'404 - Not Found'));
 		$this->Core->Response->setContent('404, Not Found');
