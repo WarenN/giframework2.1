@@ -1,1 +1,1 @@
-{"includes":{"plugins":["..\/private\/plugins\/demo\/initializer\/initializer.php"]}}
+{"includes":{"plugins_configurations":[{"name":"demo","path":"..\/private\/plugins\/demo\/init\/config.php"}],"plugins":["..\/private\/plugins\/demo\/init\/routes.php"]}}

@@ -12,10 +12,4 @@ $this->Router->route('/controller/main.ajax=','demo/main',2);
 $this->Router->route('/404/','demo/not-found');
 
 
-// runtime data example
-$data = array('test'=>'sampledata');
-
-// set the runtime data
-$this->Router->runtime($data,'demo/main');
-
 ?>

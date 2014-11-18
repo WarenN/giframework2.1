@@ -3,36 +3,39 @@
 // represent an entry (or record) retrieved from the database
 class giRecord {
 	
-	public		$Id;
-	private		$Database;
-	private		$Table;
-	private		$Columns;
+	// stores internal information of the object
+	private		$_;
 	
 	public function __construct($Table,$Database) {
-		$this->Table		= (string)	$Table;
-		$this->Database		= (object)	$Database;
+		
+		// set internals
+		$this->_ = array(
+			// id of the record
+			'id'		=>$this->id,
+			// database handle
+			'database'	=>&$Database,
+			// source table of the object
+			'table'		=>$Table,
+		);
+		
 	}
 
 	public function __toString() {
-		return(get_class($this).'/'.ucfirst($this->Table).'/'.$this->Id);	
+		// format a string named according to the object
+		return(ucfirst($this->_['table']).':'.$this->_['id']);	
 	}
 
 	public function asArray($raw=null) {
-
 		// delcare an array to be returned
 		$convertedToArray = array();
-
 		// for each attribute
 		foreach(get_object_vars($this) as $anAttributeKey => $anAttributeValue) {
-		
-			// if we're not iterating over non-data elements
-			if($anAttributeKey != 'Table' and $anAttributeKey != 'Database' and $anAttributeKey != 'quoteSymbol') {
-				
+			// if we're not iterating over the internal data array
+			if($anAttributeKey != '_') {
 				// if we want a raw object
-				if($raw and (strpos($anAttributeKey,'_date') !== false or strpos($anAttributeKey,'date_') !== false)) {
+				if($raw) {
 					// insert the element
 					$convertedToArray[$anAttributeKey] = $this->getRaw($anAttributeKey);
-
 				}
 				// not raw object
 				else {
@@ -41,16 +44,12 @@ class giRecord {
 				}
 			}
 		}
-		
-		// return the converted element
+		// return the converted object
 		return($convertedToArray);
-
 	}
 
-	/*********************************************************************************/
-
 	public function get($column) {
-		if(strpos($column,'serialized') !== false or strpos($column,'array') !== false) {
+		if(strpos($column,'_array') !== false) {
 			return(unserialize($this->{$column}));
 		}
 		/*
@@ -58,7 +57,7 @@ class giRecord {
 			return(giHumanSize($this->{$column}));
 		}
 		*/
-		elseif(strpos($column,'_date') !== false or strpos($column,'date_') !== false) {
+		elseif(strpos($column,'_date') !== false) {
 			if($this->{$column}) {
 				return(date('d/m/y',$this->{$column}));
 			}
@@ -71,10 +70,8 @@ class giRecord {
 		}
 	}
 	
-	/*********************************************************************************/
-	
 	public function getRaw($column) {
-		return((string)	$this->{$column});
+		return($this->{$column});
 	}
 	
 	/*********************************************************************************/

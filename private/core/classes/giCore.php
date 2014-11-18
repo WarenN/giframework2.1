@@ -147,9 +147,9 @@ class giCore {
 					// set the plugin libraries path
 					$aPlugin['libraries']			= '../private/plugins/' . $aPlugin['name'] . '/libraries/';
 					// set the plugins configuration file path
-					$aPlugin['configuration']		= '../private/plugins/' . $aPlugin['name'] . '/configuration/configuration.php';
+					$aPlugin['config']				= '../private/plugins/' . $aPlugin['name'] . '/init/config.php';
 					// set the plugins initializator file path
-					$aPlugin['initializator']		= '../private/plugins/' . $aPlugin['name'] . '/initializer/initializer.php';
+					$aPlugin['routes']				= '../private/plugins/' . $aPlugin['name'] . '/init/routes.php';
 					// try to include libraries
 					if(is_dir($aPlugin['classes'])) {
 						// iterate on plugins libraries
@@ -196,23 +196,23 @@ class giCore {
 						}
 					}
 					// try to include the configuration file
-					if(file_exists($aPlugin['configuration'])) {
+					if(file_exists($aPlugin['config'])) {
 						// push the include
 						$giIncludes['includes']['plugins_configurations'][] = array(
 							'name'	=>$aPlugin['name'],
-							'path'	=>$aPlugin['configuration']
+							'path'	=>$aPlugin['config']
 						);
 						// include
-						include($aPlugin['configuration']);
+						include($aPlugin['config']);
 					}
 					// set the plugins runtime environnement
 					$this->Runtime[$aPluginConfiguration['name']] = $aPlugin['runtime'];
 					// try to include the initializator file
-					if(file_exists($aPlugin['initializator'])) {
+					if(file_exists($aPlugin['routes'])) {
 						// push the include
-						$giIncludes['includes']['plugins'][] = $aPlugin['initializator'];
+						$giIncludes['includes']['plugins'][] = $aPlugin['routes'];
 						// include
-						include($aPlugin['initializator']);
+						include($aPlugin['routes']);
 					}
 				// unset the temporary aPlugin variable
 				unset($aPlugin);

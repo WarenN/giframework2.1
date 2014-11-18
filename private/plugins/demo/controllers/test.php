@@ -6,7 +6,7 @@ class TestController extends giController {
 	// this will respond to /demo/
 	public function indexAction() {
 	
-		$this->debugAction();
+		$this->debugRouterAction();
 		
 	}
 	
@@ -15,8 +15,8 @@ class TestController extends giController {
 	
 		/*
 		call this page with /demo/formating-test/json/
-		or /demo/formating-test/xml/
-		or /demo/formating-test/text/
+		or /demo/format/xml/
+		or /demo/format/text/
 		*/
 	
 		// sets the type and formating according to an url parameter
@@ -31,9 +31,10 @@ class TestController extends giController {
 		
 	}
 	
-	// this will NOT respond to /demo/debug/ as the method is private
-	private function debugAction() {
+	// this will NOT respond to /demo/debugRouter/ as the method is private
+	private function debugRouterAction() {
 	
+			$this->Core->Response->freezeFor(24);
 			$this->Core->Response->setType('text');
 		$this->Core->Response->setContent(var_export($this->Core->Router));
 
@@ -58,7 +59,10 @@ class TestController extends giController {
 	public function testDatabaseAction() {
 	
 			$this->Core->Response->setType('text');
-			$this->Core->Response->setContent($this->Core->Database->select('Accounts'));
+			
+//			$this->Core->Response->setContent($this->Core->Database->select('Accounts')[0]);
+			$this->Core->Response->setContent($this->Core->Database->select('Accounts')[0]->asArray());
+//			$this->Core->Response->setContent($this->Core->Database->select('Accounts')[0]->asArray(true));
 		
 	}
 	

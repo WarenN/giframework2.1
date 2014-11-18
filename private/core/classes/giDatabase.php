@@ -94,7 +94,7 @@ class giDatabase {
 	}
 	
 	// close all openned connexions
-	private function disconnect() {
+	public function disconnect() {
 		// if a database connexion is opened
 		if($this->Database['handle']) {
 			// close it
@@ -105,6 +105,16 @@ class giDatabase {
 			// close it
 			$this->Cache['handle']->close();
 		}
+	}
+	
+	private function quote($string) {
+		// return a string properly quoted without any dangerous symbols using PDO's engine
+		return($this->Database['handle']->Quote($string));
+	}
+	
+	private function generateQueryHash($queryElements) {
+		// create a signature for this request
+		return(md5(json_encode($queryElements)));
 	}
 	
 	// convert types like dates and arrays
@@ -262,7 +272,7 @@ class giDatabase {
 	}
 	
 	private function buildFinds($conditions,$operator=null) {
-		
+		/*
 		// if the operator is invalid
 		if(!in_array($operator,array('AND','OR'))) {
 			// force an AND operator
@@ -407,78 +417,98 @@ class giDatabase {
 			$return					= array('',array());
 			return($return);
 		}
+		*/
 	}
-
-	/*********************************************************************************/
 
 	private function buildInsert($associativeArray) {
+		// prepare an array to receive column names
 		$columns					= array();
+		// prepare an array to receive values
 		$values						= array();
+		// for each value
 		foreach($associativeArray as $insertColumn => $insertValue) {
-			$columns				[]= (string)	$insertColumn;
+			// push the column
+			$columns				[]= $insertColumn;
+			// push the value
 			$values					[]= $insertValue;
 		}
+		// build the insert statement assembling all columns names
 		$columns					= (string)	' ( '.$this->Quote.implode($this->Quote.' , '.$this->Quote,$columns).$this->Quote.' ) ';
+		// prepare an array with statement and values separated
 		$return						= array($columns,$values);
+		// return that array
 		return($return);
 	}
-
-	/*********************************************************************************/
 
 	private function buildPlaceholders($array) {
+		// prepare an empty array
 		$placeholders				= array();
+		// for each value
 		foreach($array as $anEntry) {
+			// add a placeholder
 			$placeholders			[]= (string)	'?';
 		}
+		// assemble all placeholder together
 		$return						= (string)	' ( '.implode(' , ',$placeholders).' ) ';
+		// return the formated statement
 		return($return);
 	}
-
-	/*********************************************************************************/
 	
 	private function buildUpdates($associativeArray) {
+		// prepare an array to store columns
 		$updates					= array();
+		// prepare an array to store values
 		$values						= array();
+		// for each column to update
 		foreach($associativeArray as $updateColumn => $updateValue) {
-			$updates				[]= (string)	' '.$this->quote($updateColumn).' = ? ';
+			// escape the column name with placeholder and push into an array
+			$updates				[]= ' '.$this->quote($updateColumn).' = ? ';
+			// push the value into another array
 			$values					[]= $updateValue;
 		}
+		// assemble the SET statements 
 		$updates					= (string)	' SET'.implode(' , ',$updates);
+		// prepare an array with statement and value separated
 		$return						= array($updates,$values);
+		// return that array
 		return($return);
 	}
-
-	/*********************************************************************************/
-
+	
 	private function buildOrderBy($orderby) {
+		// default is no order by
 		$return = '';
-		if(count($orderby) == 0){
-			return $return;
-		}
+		// if order columns have been provided
 		if(is_array($orderby)){
-			$orderArray        = array();
+			// prepare an array to store order options
+			$orderArray		= array();
+			// for each ordering option
 			foreach($orderby as $aColumnName => $aSortOrder){
-				$orderArray [] = $this->quote($aColumnName).' '.$aSortOrder;
+				// if sort order is no valid
+				if($aSortOrder != 'ASC' and $aSortOrder != 'DESC') {
+					// force the sort order
+					$aSortOrder = 'ASC';	
+				}
+				// push the ordering statement
+				$orderArray	[]= $this->quote($aColumnName).' '.$aSortOrder;
 			}
+			// assemble all the order by statements
 			$return = ' ORDER BY '.implode(', ',$orderArray);
 		}
+		// return the order by statement if any
 		return $return;
 	}
-
-	/*********************************************************************************/
 
 	private function buildLimitTo($limitto) {
+		// default is no limit
 		$return = '';
-		if(!is_array($limitto)){
-			return $return;
+		// if limit to is an array of exactly two parameters
+		if(is_array($limitto) and $limitto[0] !== null and $limitto[1] !== null){
+			// assemble the limit to statement
+			$return = ' LIMIT  '.intval($limitto[0]).' , '.intval($limitto[1]);
 		}
-		if($limitto[0] !== null and $limitto[1] !== null){
-			$return = ' LIMIT  '.$limitto[0].' , '.$limitto[1];
-		}
+		// return the limit if any
 		return $return;
 	}
-	
-	/*********************************************************************************/
 	
 	private function buildFTS($search,$table,$column) {
 		// define the columns to search into
@@ -494,27 +524,23 @@ class giDatabase {
 		}
 		// if only one column is to be searched
 		if(count($search_columns) == 1) {
+			// assemble the condition
 			$fts = ' WHERE '.$this->quote($search_columns[0]).' MATCH '.'?';
 		}
+		// multiple columns are to be searched
 		else {
+			// for each column to search
 			foreach($search_columns as $aSearchId => $aSearchColumn) {
+				// escape that column's name
 				$search_columns[$aSearchId] = $this->quote($aSearchColumn);
 			}
+			// assemble the statements
 			$fts = ' WHERE '.implode(', ',$search_columns).' MATCH '.'?';
 		}
+		// return the conditions
 		return($fts);
 	}
 	
-	private function quote($string) {
-		// return a string properly quoted without any dangerous symbols
-		return($this->Database['handle']->Quote($string));
-	
-	}
-	
-	private function generateQueryHash($queryElements) {
-		// create a signature for this request
-		return(md5(json_encode($queryElements)));
-	}
 	
 	
 	public function updateOutdated($aTable) {
@@ -617,14 +643,10 @@ class giDatabase {
 			return($queryResult);
 		}
 	}
-
-	/*********************************************************************************/
 	
 	public function flushCache() {
-		// access configuration
-		global $giConfiguration;
 		// the cache is enabled
-		if($giConfiguration->isMemcacheEnabled()) {
+		if($this->Cache['enabled']) {
 			// flush the cache
 			return($this->Cache['handler']->flush());	
 		}
@@ -670,7 +692,7 @@ class giDatabase {
 		$query						= (string)	'SELECT '.$columns.' FROM '.$table.$conditions.$orderby.$limitto;
 		$prepare					= (object)	$this->Database['handle']->prepare($query);
 		$execute					= (object)	$prepare->execute($values);
-		$fetch						= (array)	$prepare->fetchAll(PDO::FETCH_CLASS, self::FETCH_CLASS, array($atable,$this->Database['handle'],$this->Quote));
+		$fetch						= (array)	$prepare->fetchAll(PDO::FETCH_CLASS, self::FETCH_CLASS, array($atable,$this->Database['handle']));
 		$this->putInCache($queryElements,$fetch);
 		// return an array of database-connected-objects
 		return($fetch);
@@ -853,7 +875,7 @@ class giDatabase {
 		// if we don't have a connexion yet
 		if(!$this->Database['handle']) {
 			// connect to the database
-			$this->connect();	
+			$this->connect();
 		}
 		$queryElements				= array($atable,$conditions,$operator);
 		$cachedData 				= $this->isInCache($queryElements,$atable,$lag);

@@ -110,12 +110,10 @@ class giResponse {
 				
 				// actual content
 				$temporaryContent .= '</head><body>'.$this->getContent().'</body></html>';		
-				
+
+				// set the formated content				
 				$this->setContent($temporaryContent);
-/*
-'.$this->buildStylesheets().'
-'.$this->buildJavascript().'
-*/
+
 				// if we want to indent the code
 				if($this->Indent == true) {
 					// indent it
@@ -366,26 +364,8 @@ class giResponse {
 	// output the document to the browser
 	public function output() {
 		
-		// access required objects
-		global $giConfiguration, $giRequest, $giDebug, $giAuthentication;
-		
 		// compute the final execution time
 		$this->ExecutionTime = round(microtime(true) - giCore::get('start_time'),3).' sec';
-		
-		// if type is html AND debug is enabled in the config AND debug enabled by the request
-		if($this->Type == 'html' and $this->Debug and giRouter::hasDebug()) {
-			
-			// add the debugging code to the actual content
-			//$this->Content .= $giDebug->getDebugHTML();
-			
-		}
-		// if content is an array and debug is enabled
-		elseif(is_array($this->Content)  and $this->Debug and giRouter::hasDebug()) {
-	
-			// push the debug elements
-			//$this->Content['debug'] = $giDebug->getDebugArray();
-			
-		}
 
 		// if type is html and a google tracking id is set and we're in production
 		if($this->Type == 'html' and $this->googleAnalyticsId and $this->Environment == 'prod') {
@@ -522,10 +502,7 @@ class giResponse {
 	}
 	
 	// compress the output if it's enabled in the configuration and authorized by the browser
-	public function compressContent() {
-	
-		// access the configuration and request
-		global $giConfiguration,$giRequest;
+	private function compressContent() {
 		
 		// if the configuration authorizes it
 		if($this->Compress) {
@@ -540,20 +517,16 @@ class giResponse {
 				$this->Checksum = md5($this->getContent());
 				
 				// override the previous headers
-				header('Content-MD5: '.$this->Checksum);
 				$this->setHeader('Content-MD5',$this->Checksum);
 				
 			}
 			
-			// override the Content-Encoding
-			header('Content-Encoding: gzip');
 			$this->setHeader('Content-Encoding','gzip');
 			
 			// update the length
 			$this->Length = strlen($this->getContent());
 			
 			// ovveride the Content-Length 
-			header('Content-Length: '.$this->Length);
 			$this->setHeader('Content-Length',$this->Length);
 			
 		}
@@ -777,16 +750,16 @@ class giResponse {
 			$aSignature = giRouter::getSignature();
 		
 			// put the content in the cache
-			file_put_contents('../private/data/cache/output/'.$aSignature.'.raw',$this->getContent());
+			file_put_contents('../private/data/cache/response/'.$aSignature.'.raw',$this->getContent());
 			
 			// put the content in the cache
-			file_put_contents('../private/data/cache/output/'.$aSignature.'.json',json_encode($this->getHeaders()));
+			file_put_contents('../private/data/cache/response/'.$aSignature.'.json',json_encode($this->getHeaders()));
 			
 			// set the modification time to time()+ $this->Freeze
-			touch('../private/data/cache/output/'.$aSignature.'.raw',time()+intval($this->Freeze)*3600);
+			touch('../private/data/cache/response/'.$aSignature.'.raw',time()+intval($this->Freeze)*3600);
 			
 			// set the modification time to time()+ $this->Freeze
-			touch('../private/data/cache/output/'.$aSignature.'.json',time()+intval($this->Freeze)*3600);
+			touch('../private/data/cache/response/'.$aSignature.'.json',time()+intval($this->Freeze)*3600);
 			
 		}	
 		

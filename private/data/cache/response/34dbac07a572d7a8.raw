@@ -1,0 +1,120 @@
+giRouter::__set_state(array(
+   'Routes' => 
+  array (
+    '/demo/' => 
+    array (
+      'url' => '/demo/',
+      'mapto' => 'demo/test',
+      'parameters' => 
+      array (
+        0 => '/demo/',
+        1 => 'action/',
+        2 => 'format/',
+      ),
+      'security_level' => NULL,
+      'security_module' => NULL,
+    ),
+    '/' => 
+    array (
+      'url' => '/',
+      'mapto' => 'demo/index',
+      'parameters' => NULL,
+      'security_level' => NULL,
+      'security_module' => NULL,
+    ),
+    '/users/' => 
+    array (
+      'url' => '/users/',
+      'mapto' => 'demo/users',
+      'parameters' => 
+      array (
+        0 => '/users/',
+        1 => 'action/',
+        2 => 'id/',
+      ),
+      'security_level' => 5,
+      'security_module' => NULL,
+    ),
+    '/statistics/' => 
+    array (
+      'url' => '/statistics/',
+      'mapto' => 'demo/statistics',
+      'parameters' => 
+      array (
+        0 => '/statistics/',
+        1 => 'action/',
+        2 => 'id/',
+      ),
+      'security_level' => 10,
+      'security_module' => 'MOD_STAT',
+    ),
+    '/a-propos/informations-legales.html' => 
+    array (
+      'url' => '/a-propos/informations-legales.html',
+      'mapto' => 'demo/info-legales',
+      'parameters' => NULL,
+      'security_level' => NULL,
+      'security_module' => NULL,
+    ),
+    '/controller/main.ajax=' => 
+    array (
+      'url' => '/controller/main.ajax=',
+      'mapto' => 'demo/main',
+      'parameters' => NULL,
+      'security_level' => 2,
+      'security_module' => NULL,
+    ),
+    '/404/' => 
+    array (
+      'url' => '/404/',
+      'mapto' => 'demo/not-found',
+      'parameters' => NULL,
+      'security_level' => NULL,
+      'security_module' => NULL,
+    ),
+  ),
+   'Request' => '/demo/',
+   'Method' => NULL,
+   'Headers' => 
+  array (
+    'Content-Length' => '0',
+    'Host' => 'giframework2',
+    'Dnt' => '1',
+    'Connection' => 'keep-alive',
+    'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/600.1.17 (KHTML, like Gecko) Version/7.1 Safari/537.85.10',
+    'Accept-Language' => 'en-us',
+    'Accept-Encoding' => 'gzip, deflate',
+    'Cache-Control' => 'max-age=0',
+  ),
+   'Cache' => true,
+   'Debug' => false,
+   'Cli' => NULL,
+   'Plugin' => 'demo',
+   'Controller' => 'test',
+   'Script' => '../private/plugins/demo/controllers/test.php',
+   'Class' => 'TestController',
+   'Action' => NULL,
+   'Function' => 'indexAction',
+   'Options' => 
+  array (
+    'url' => '/demo/',
+    'mapto' => 'demo/test',
+    'parameters' => 
+    array (
+      1 => 'action/',
+      2 => 'format/',
+    ),
+    'security_level' => NULL,
+    'security_module' => NULL,
+  ),
+   'Parameters' => 
+  stdClass::__set_state(array(
+     'Action' => NULL,
+     'Format' => NULL,
+  )),
+   'Compression' => true,
+   'Missing' => '/404/',
+   'Level' => NULL,
+   'Module' => NULL,
+))
