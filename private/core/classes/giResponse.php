@@ -446,9 +446,6 @@ class giResponse {
 		// if we want to force the download
 		if($force) {
 			
-			// first disable caching
-			$this->disableCache();
-			
 			// alter mimetype headers
 			$this->setHeader('Content-Type','application/octet-stream');
 			
@@ -517,16 +514,26 @@ class giResponse {
 				$this->Checksum = md5($this->getContent());
 				
 				// override the previous headers
+				header('Content-MD5: '.$this->Checksum);
+				
+				// set headers for caching purpose
 				$this->setHeader('Content-MD5',$this->Checksum);
 				
 			}
 			
+			// set encoding as gzip
+			header('Content-Encoding: gzip');
+			
+			// set headers for caching purpose
 			$this->setHeader('Content-Encoding','gzip');
 			
 			// update the length
 			$this->Length = strlen($this->getContent());
 			
 			// ovveride the Content-Length 
+			header('Content-Length: '.$this->Length);
+			
+			// set headers for caching purpose
 			$this->setHeader('Content-Length',$this->Length);
 			
 		}
