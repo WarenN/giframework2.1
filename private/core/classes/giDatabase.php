@@ -1,49 +1,40 @@
 <?php
-/* 
-
-TODOLIST:
-- make the ->fts method compatible with MySQL full text search engine.
-- is case of PDO DB, connect « on demand » to free the database lock as soon as possible
-
-CONNECT ON THE FLY !!!
-IF PDO HANDLE IS MISSING BEFORE A QUERY, CONNECT THE DB
-BUT DON'T CONNECT AS DEFAULT
-
-
-*/
 
 // helper that provides some simple methods simplifying records manipulation 
 class giDatabase {
 
 	// class of the child
-	const FETCH_CLASS = 'giDatabaseRecord';
+	const FETCH_CLASS = 'giRecord';
 
 	// handles everything about the database
 	protected $Database;	
-	
 	// handles everything about the cache
-	protected $Cache;		
-
+	protected $Cache;
+	
+	// main constructor
 	public function __construct() {
+		
 		// initialise empty properties
 		$this->Database		= array('handle'=>null);	
 		$this->Cache		= array('handle'=>null);
+
 	}
 	
 	// set the configuration parameters
 	public function setConfiguration(
 	
 		// set the parameters for this database
-		$database_driver	='sqlite',
-		$database_database	='../private/data/sqlite/common.sqlite',
-		$database_user		='',
-		$database_pass		='',
-		$database_host		='127.0.0.1',
+		$database_driver	=null,
+		$database_database	=null,
+		$database_user		=null,
+		$database_pass		=null,
+		$database_host		=null,
 		
 		// set the parameters for caching SQL queries
-		$cache_prefix		='giCache_',
-		$cache_host			='127.0.0.1',
-		$cache_port			='12211'
+		$cache_enabled		=null,
+		$cache_prefix		=null,
+		$cache_host			=null,
+		$cache_port			=null
 		
 	) {
 	
@@ -55,6 +46,7 @@ class giDatabase {
 		$this->Database['hostname']	= $database_host;
 		
 		// set the parameters for caching SQL queries
+		$this->Cache['enabled']		= $cache_enabled;
 		$this->Cache['prefix']		= $cache_prefix;
 		$this->Cache['hostname']	= $cache_host;
 		$this->Cache['port']		= $cache_port;
@@ -67,40 +59,33 @@ class giDatabase {
 		$this->disconnect();
 	}
 	
-	// connect database and cache
+	// connect database and cache (if any)
 	private function connect() {
-		// access the configuration
-		global $giConfiguration;
+
 		// depending on the driver, use the right method to connect to the database
 		switch($this->Database['driver']) {
 			// in case the driver is SQLite
 			case 'sqlite':
 				// open a PDO connexion
 				$this->Database['handle']	= new PDO('sqlite:'.$this->Database['database']);
-				// set the proper quote symbol
-				$this->quote 	= '"';
 			break;
 			// in case the driver is MySQL
 			case 'mysql':
 				// open a PDO connexion
-				$this->Database['handle']	= new PDO('mysql:dbname='.$this->Database['database'].';host='.$this->hostname,$this->username,$this->password);
-				// set the proper quote symbol
-				$this->quote 	= '`';
+				$this->Database['handle']	= new PDO(
+					'mysql:dbname='.$this->Database['database'].';host='.$this->Database['hostname'],
+					$this->Database['username'],
+					$this->Database['password']
+				);
 			break;
-			// de driver is unknown or not supported
+			// the driver is unknown or not supported
 			default:
-				// access the logger
-				global $giLogger;
-				// log this
-				$giLogger->error('This driver is not supported '.$this->Database['driver']);
-				// access the output
-				global $giOutput;
-				// output a fatal error
-				$giOutput->error500('This driver is not supported');
+				// throw an exception
+				Throw new Exception('giDatabase->connect() : This PDO driver is not supported');
 			break;
 		}
-		// depending on the database cache engine ot use
-		if($giConfiguration->isMemcacheEnabled()) {
+		// if memcache is enabled
+		if($this->Cache['enabled']) {
 			// instanciate a memcache client
 			$this->Cache['handle'] = new Memcache();
 			// configure the memcache client
@@ -122,26 +107,22 @@ class giDatabase {
 		}
 	}
 	
-	// serialize data to store in the database
-	private function serializator($associativeArray) {
+	// convert types like dates and arrays
+	private function convertTypes($associativeArray) {
 		// for each element of the array
 		foreach($associativeArray as $anElementKey => $anElementValue) {
+			// if we find a file keyword
+			if(strpos($anElementKey,'_file') !== false) {
+					// store that file and replace it by a json value in the database
+					// array(path=>null,size=>null,mime=>null)
+			}
 			// if we find a serialization keyword
-			if(strpos($anElementKey,'_array') !== false) {
+			elseif(strpos($anElementKey,'_array') !== false) {
 				// encode the content as JSON
-				$associativeArray[$anElementKey] = (string)	json_encode($anElementValue);
-			}	
-		}
-		// return the array
-		return($associativeArray);
-	}
-	
-	// convert dates to unix epoch
-	private function timestamper($associativeArray) {
-		// for each element of the array
-		foreach($associativeArray as $anElementKey => $anElementValue) {
+				$associativeArray[$anElementKey] = json_encode($anElementValue);
+			}
 			// if we are dealing with a date
-			if(strpos($anElementKey,'_date') !== false) {
+			elseif(strpos($anElementKey,'_date') !== false) {
 				// if the date is formated with two slashs
 				if(substr_count($anElementValue,'/') == 2) {
 					// set the separator
@@ -181,7 +162,7 @@ class giDatabase {
 	
 	// escape the table name
 	private function buildTable($table) {
-		return($this->quoteColumn($table));
+		return($this->quote($table));
 	}
 	
 	// build the column list
@@ -197,14 +178,12 @@ class giDatabase {
 			// for each column
 			foreach($columns as $aColumn) {
 				// escape the column name
-				$actualColumns[] = $this->quoteColumn($aColumn);
+				$actualColumns[] = $this->quote($aColumn);
 			}
 			// aggregate all columns
 			return(implode(', ',$actualColumns));	
 		}
 	}
-	
-	/*********************************************************************************/
 	
 	// build simple conditions
 	private function buildConditions($conditions,$operator=null) {
@@ -215,27 +194,31 @@ class giDatabase {
 		}
 		// if conditions are under array form
 		if(is_array($conditions)) {
+			// prepare empty arrays
 			$conditionsArray		= array();
 			$conditionsValues		= array();
-			// for each condition
+			// for each condition provided
 			foreach($conditions as $aConditionColumn => $aConditionValue) {
 				// escape the column name and insert the ?
-				$conditionsArray	[]= (string)	$this->quoteColumn($aConditionColumn).' = ?';
+				$conditionsArray	[]= $this->quote($aConditionColumn).' = ?';
 				// set the value
-				$conditionsValues	[]= (string)	$aConditionValue;
+				$conditionsValues	[]= $aConditionValue;
 			}
-			// build all the conditions together
-			$conditions 			= (string)	' WHERE ( '.implode(' '.$operator.' ',$conditionsArray).' )';
+			// assemble all the conditions together
+			$conditions 			= ' WHERE ( '.implode(' '.$operator.' ',$conditionsArray).' )';
+			// prepare an array to return with query in 0 and conditions array in 1
 			$return					= array($conditions,$conditionsValues);
+			// return built conditions
 			return($return);
 		}
+		// conditions provided are in a wrong format
 		else {
-			$return					= array('',array());
+			// prepare an empty array to return
+			$return = array('',array());
+			// return empty options
 			return($return);
 		}
 	}
-
-	/*********************************************************************************/
 	
 	private function buildSearchs($conditions,$operator=null) {
 		// if the operator is invalid
@@ -243,30 +226,40 @@ class giDatabase {
 			// force the AND operator
 			$operator = 'AND';
 		}
+		// if the conditions provided are in form or an array
 		if(is_array($conditions)) {
+			// prepare empty arrays
 			$conditionsArray		= array();
 			$conditionsValues		= array();
+			// for each provided condition
 			foreach($conditions as $aConditionColumn => $aConditionValue) {
+				// if the searched value is only one character long
 				if(strlen($aConditionValue) == 1) {
-					$conditionsArray	[]= (string)	$this->quoteColumn($aConditionColumn).' LIKE ?';
-					$conditionsValues	[]= (string)	$aConditionValue.'%';
+					// searched value must start with that letter
+					$conditionsArray	[]= $this->quote($aConditionColumn).' LIKE ?';
+					$conditionsValues	[]= $aConditionValue.'%';
 				}
+				// the searched value can be anywhere in the column
 				else {
-					$conditionsArray	[]= (string)	$this->quoteColumn($aConditionColumn).' LIKE ?';
-					$conditionsValues	[]= (string)	'%'.$aConditionValue.'%';
+					$conditionsArray	[]= $this->quote($aConditionColumn).' LIKE ?';
+					$conditionsValues	[]= '%'.$aConditionValue.'%';
 				}
 					}
-			$conditions 			= (string)	' WHERE ( '.implode(' '.$operator.' ',$conditionsArray).' )';
+			// assemble all the conditions together
+			$conditions 			= ' WHERE ( '.implode(' '.$operator.' ',$conditionsArray).' )';
+			// prepare an array with the query and the values separated
 			$return					= array($conditions,$conditionsValues);
+			// return both
 			return($return);
 		}
+		// conditions provided are wrong
 		else {
-			$return					= array('',array());
+			// prepare an empty array
+			$return	= array('',array());
+			// return it
 			return($return);
 		}
 	}
-	
-	/*********************************************************************************/
 	
 	private function buildFinds($conditions,$operator=null) {
 		
@@ -324,45 +317,45 @@ class giDatabase {
 					case '>=':
 					case '<':
 					case '>':
-						$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quoteColumn($ConditionColumn).' '.$ConditionOperator.' ?';
+						$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quote($ConditionColumn).' '.$ConditionOperator.' ?';
 						$conditionsValues	[]= (string)	$v1;
 						break;
 									case 'IS':
 						if( strtoupper($v1) == "NULL") {
-							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quoteColumn($ConditionColumn).' '.$ConditionOperator.$not.' NULL';
+							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quote($ConditionColumn).' '.$ConditionOperator.$not.' NULL';
 						} else {
-							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quoteColumn($ConditionColumn).' '.$ConditionOperator.$not.' ?';
+							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quote($ConditionColumn).' '.$ConditionOperator.$not.' ?';
 							$conditionsValues	[]= (string)	$v1;
 						}
 						break;
 	
 					case 'LIKE':
-						$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quoteColumn($ConditionColumn).' '.$not.$ConditionOperator.' ?';
+						$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quote($ConditionColumn).' '.$not.$ConditionOperator.' ?';
 						$conditionsValues	[]= (string)	'%'.$v1.'%';
 						break;
 	
 					case 'START WITH':
-						$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quoteColumn($ConditionColumn).$not.' LIKE ?';
+						$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quote($ConditionColumn).$not.' LIKE ?';
 						$conditionsValues	[]= (string)	$v1.'%';
 						break;
 	
 					case 'END WITH':
-						$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quoteColumn($ConditionColumn).$not.' LIKE ?';
+						$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quote($ConditionColumn).$not.' LIKE ?';
 						$conditionsValues	[]= (string)	'%'.$v1;
 						break;
 	
 					case 'BETWEEN':
 						if( $v1 != NULL && $v2 != NULL ){
-							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quoteColumn($ConditionColumn).$not.' BETWEEN ? AND ?';
+							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quote($ConditionColumn).$not.' BETWEEN ? AND ?';
 							$conditionsValues	[]= (string)	$v1;
 							$conditionsValues	[]= (string)	$v2;
 	
 						} elseif( $v1 != NULL && $v2 == NULL  ) {
-							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quoteColumn($ConditionColumn).' >= ?';
+							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quote($ConditionColumn).' >= ?';
 							$conditionsValues	[]= (string)	$v1;
 	
 						} elseif( $v1 == NULL && $v2 != NULL  ) {
-							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quoteColumn($ConditionColumn).' <= ?';
+							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quote($ConditionColumn).' <= ?';
 							$conditionsValues	[]= (string)	$v2;
 						}
 						break;
@@ -370,18 +363,18 @@ class giDatabase {
 					// bitwise AND
 					case '&':
 						if( strtoupper($v1) == "NULL") {
-							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quoteColumn($ConditionColumn).' '.$ConditionOperator.$not.' NULL';
+							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quote($ConditionColumn).' '.$ConditionOperator.$not.' NULL';
 						} else {
-							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quoteColumn($ConditionColumn).' '.$ConditionOperator.$not.' ?';
+							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quote($ConditionColumn).' '.$ConditionOperator.$not.' ?';
 							$conditionsValues	[]= (string)	$v1;
 						}
 						break;
 									// bitwise OR (inclusive or)
 					case '|':
 						if( strtoupper($v1) == "NULL") {
-							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quoteColumn($ConditionColumn).' '.$ConditionOperator.$not.' NULL';
+							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quote($ConditionColumn).' '.$ConditionOperator.$not.' NULL';
 						} else {
-							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quoteColumn($ConditionColumn).' '.$ConditionOperator.$not.' ?';
+							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quote($ConditionColumn).' '.$ConditionOperator.$not.' ?';
 							$conditionsValues	[]= (string)	$v1;
 						}
 						break;
@@ -389,9 +382,9 @@ class giDatabase {
 					// bitwise XOR (exclusive or)
 					case '^':
 						if( strtoupper($v1) == "NULL") {
-							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quoteColumn($ConditionColumn).' '.$ConditionOperator.$not.' NULL';
+							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quote($ConditionColumn).' '.$ConditionOperator.$not.' NULL';
 						} else {
-							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quoteColumn($ConditionColumn).' '.$ConditionOperator.$not.' ?';
+							$conditionsArray	[]= (string)	$ConditionChain.' '.$this->quote($ConditionColumn).' '.$ConditionOperator.$not.' ?';
 							$conditionsValues	[]= (string)	$v1;
 						}
 						break;
@@ -425,7 +418,7 @@ class giDatabase {
 			$columns				[]= (string)	$insertColumn;
 			$values					[]= $insertValue;
 		}
-		$columns					= (string)	' ( '.$this->quote.implode($this->quote.' , '.$this->quote,$columns).$this->quote.' ) ';
+		$columns					= (string)	' ( '.$this->Quote.implode($this->Quote.' , '.$this->Quote,$columns).$this->Quote.' ) ';
 		$return						= array($columns,$values);
 		return($return);
 	}
@@ -447,7 +440,7 @@ class giDatabase {
 		$updates					= array();
 		$values						= array();
 		foreach($associativeArray as $updateColumn => $updateValue) {
-			$updates				[]= (string)	' '.$this->quoteColumn($updateColumn).' = ? ';
+			$updates				[]= (string)	' '.$this->quote($updateColumn).' = ? ';
 			$values					[]= $updateValue;
 		}
 		$updates					= (string)	' SET'.implode(' , ',$updates);
@@ -465,7 +458,7 @@ class giDatabase {
 		if(is_array($orderby)){
 			$orderArray        = array();
 			foreach($orderby as $aColumnName => $aSortOrder){
-				$orderArray [] = $this->quoteColumn($aColumnName).' '.$aSortOrder;
+				$orderArray [] = $this->quote($aColumnName).' '.$aSortOrder;
 			}
 			$return = ' ORDER BY '.implode(', ',$orderArray);
 		}
@@ -501,42 +494,32 @@ class giDatabase {
 		}
 		// if only one column is to be searched
 		if(count($search_columns) == 1) {
-			$fts = ' WHERE '.$this->quoteColumn($search_columns[0]).' MATCH '.'?';
+			$fts = ' WHERE '.$this->quote($search_columns[0]).' MATCH '.'?';
 		}
 		else {
 			foreach($search_columns as $aSearchId => $aSearchColumn) {
-				$search_columns[$aSearchId] = $this->quoteColumn($aSearchColumn);
+				$search_columns[$aSearchId] = $this->quote($aSearchColumn);
 			}
 			$fts = ' WHERE '.implode(', ',$search_columns).' MATCH '.'?';
 		}
 		return($fts);
 	}
 	
-	/*********************************************************************************/
-	
 	private function quote($string) {
 		// return a string properly quoted without any dangerous symbols
-		return($this->Database['handle']->quote($string));
+		return($this->Database['handle']->Quote($string));
 	
 	}
-	
-	private function quoteColumn($string) {
-		// return a string simply quoted according to database preferences
-		return($this->quote.$string.$this->quote);
-	}
-	
-	/*********************************************************************************/
 	
 	private function generateQueryHash($queryElements) {
 		// create a signature for this request
 		return(md5(json_encode($queryElements)));
 	}
 	
+	
 	public function updateOutdated($aTable) {
-		// access configuration
-		global $giConfiguration;
 		// if caching is enabled
-		if($giConfiguration->isMemcacheEnabled()) {
+		if($this->Cache['enabled']) {
 			// try to update
 			$oudatedUpdate = $this->Cache['handle']->replace($this->Cache['prefix'].'_lu_'.$aTable,time());	
 			// if the update failed
@@ -547,18 +530,12 @@ class giDatabase {
 		}	
 	}
 	
+	// check if an sql query is in cache
 	private function isInCache($queryElements,$aTable,$lagTolerance) {
-		// access configuration
-		global $giConfiguration;
 		// the cache is enabled
-		if($giConfiguration->isMemcacheEnabled()) {
+		if($this->Cache['enabled']) {
 			// generate a hash for this specific query
 			$aQueryHash = $this->generateQueryHash($queryElements);
-			// if in debug mode
-			if($this->debug) {
-				// dump the cache query
-				var_dump('get:'.$aQueryHash);
-			}
 			// get the last cached query
 			$lastCachedQuery = $this->Cache['handle']->get($this->Cache['prefix'].'_qt_'.$aQueryHash);
 			// if there is no cached query
@@ -576,7 +553,8 @@ class giDatabase {
 			// if there is no lag tolerance
 			if(!$lagTolerance or $lagTolerance == 0) {
 				// if we don't know the last update date of the able
-				if(!$lastTableUpdate) {								// set the last modification date for the next time
+				if(!$lastTableUpdate) {
+					// set the last modification date for the next time
 					$this->Cache['handle']->set($this->Cache['prefix'].'_lu_'.$aTable,time());
 					// returned the last cached query
 					return($this->Cache['handle']->get($this->Cache['prefix'].'_qd_'.$aQueryHash));
@@ -613,18 +591,12 @@ class giDatabase {
 		}
 	}
 	
+	// put an SQL query result in cache
 	private function putInCache($queryElements,$queryResult) {
-		// access configuration
-		global $giConfiguration;
-		// the cache is enabled
-		if($giConfiguration->isMemcacheEnabled()) {
+		// if the cache is enabled
+		if($this->Cache['enabled']) {
 			// generate the query hash
 			$aQueryHash = $this->generateQueryHash($queryElements);
-			// if in debug mode
-			if($this->debug) {
-				// dump
-				var_dump('set:'.$aQueryHash);
-			}
 			// if the query was a passthru query we have an object and not an array
 			if(is_object($queryResult) and get_class($queryResult) == 'PDOStatement') {
 				// declare the actual results array
@@ -698,7 +670,7 @@ class giDatabase {
 		$query						= (string)	'SELECT '.$columns.' FROM '.$table.$conditions.$orderby.$limitto;
 		$prepare					= (object)	$this->Database['handle']->prepare($query);
 		$execute					= (object)	$prepare->execute($values);
-		$fetch						= (array)	$prepare->fetchAll(PDO::FETCH_CLASS, self::FETCH_CLASS, array($atable,$this->Database['handle'],$this->quote));
+		$fetch						= (array)	$prepare->fetchAll(PDO::FETCH_CLASS, self::FETCH_CLASS, array($atable,$this->Database['handle'],$this->Quote));
 		$this->putInCache($queryElements,$fetch);
 		// return an array of database-connected-objects
 		return($fetch);
@@ -724,7 +696,7 @@ class giDatabase {
 		$query						= (string)	'SELECT '.$columns.' FROM '.$table.$conditions.$orderby.$limitto;
 		$prepare					= (object)	$this->Database['handle']->prepare($query);
 		$execute					= (object)	$prepare->execute($values);
-		$fetch						= (array)	$prepare->fetchAll(PDO::FETCH_CLASS, self::FETCH_CLASS, array($atable,$this->Database['handle'],$this->quote));
+		$fetch						= (array)	$prepare->fetchAll(PDO::FETCH_CLASS, self::FETCH_CLASS, array($atable,$this->Database['handle'],$this->Quote));
 		$this->putInCache($queryElements,$fetch);
 		// return an array of database-connected-objects
 		return($fetch);	
@@ -755,7 +727,7 @@ class giDatabase {
 		$this->dumpQuery($query,$search_value);
 		$prepare					= (object)	$this->Database['handle']->prepare($query);
 		$execute					= (object)	$prepare->execute(array($search_value));
-		$fetch						= (array)	$prepare->fetchAll(PDO::FETCH_CLASS, self::FETCH_CLASS, array($atable,$this->Database['handle'],$this->quote));
+		$fetch						= (array)	$prepare->fetchAll(PDO::FETCH_CLASS, self::FETCH_CLASS, array($atable,$this->Database['handle'],$this->Quote));
 		return($fetch);
 	}
 	
@@ -783,7 +755,7 @@ class giDatabase {
 		$query						= (string)	'SELECT '.$columns.' FROM '.$table.$conditions.$orderby.$limitto;
 		$prepare					= (object)	$this->Database['handle']->prepare($query);
 		$execute					= (object)	$prepare->execute($values);
-		$fetch						= (array)	$prepare->fetchAll(PDO::FETCH_CLASS, self::FETCH_CLASS, array($atable,$this->Database['handle'],$this->quote));
+		$fetch						= (array)	$prepare->fetchAll(PDO::FETCH_CLASS, self::FETCH_CLASS, array($atable,$this->Database['handle'],$this->Quote));
 		// return an array of database-connected-objects
 		return($fetch);
 	}
@@ -858,7 +830,7 @@ class giDatabase {
 		$query						= (string)	'SELECT '.$columns.' FROM '.$table.$conditions;
 		$prepare					= (object)	$this->Database['handle']->prepare($query);
 		$execute					= (object)	$prepare->execute($values);
-		list($object)				= (array)	$prepare->fetchAll(PDO::FETCH_CLASS, self::FETCH_CLASS, array($atable,$this->Database['handle'],$this->quote));
+		list($object)				= (array)	$prepare->fetchAll(PDO::FETCH_CLASS, self::FETCH_CLASS, array($atable,$this->Database['handle'],$this->Quote));
 		$this->putInCache($queryElements,$object);
 		// return the object
 		return($object);
@@ -914,7 +886,7 @@ class giDatabase {
 		}
 		if(count($conditions) == 0) { $conditions= null; }
 		if($field==null) 			{ return(false); }
-		else 						{ $field	= $this->quoteColumn($field); }
+		else 						{ $field	= $this->quote($field); }
 		$table 						= $this->buildTable($atable);
 		list($conditions,$values)	= (array)	$this->buildConditions($conditions,$operator);
 		$query						= (string)	'SELECT SUM('.$field.') FROM '.$table.$conditions;
@@ -939,7 +911,7 @@ class giDatabase {
 		}
 		if(count($conditions) == 0) { $conditions= null; }
 		if($field==null) 			{ return(false); }
-		else 						{ $field	= $this->quoteColumn($field); }
+		else 						{ $field	= $this->quote($field); }
 		$table 						= $this->buildTable($atable);
 		list($conditions,$values)	= (array)	$this->buildConditions($conditions,$operator);
 		$query						= (string)	'SELECT MIN('.$field.') FROM '.$table.$conditions;
@@ -964,7 +936,7 @@ class giDatabase {
 		}
 		if(count($conditions) == 0) { $conditions= null; }
 		if($field==null) 			{ return(false); }
-		else 						{ $field	= $this->quoteColumn($field); }
+		else 						{ $field	= $this->quote($field); }
 		$table 						= $this->buildTable($atable);
 		list($conditions,$values)	= (array)	$this->buildConditions($conditions,$operator);
 		$query						= (string)	'SELECT MAX('.$field.') FROM '.$table.$conditions;
@@ -987,7 +959,7 @@ class giDatabase {
 		if($cachedData !== null) {
 			return($cachedData);
 		}
-		$returnedData = $this->Database['handle']->query($query,PDO::FETCH_CLASS, self::FETCH_CLASS, array($atable,$this->Database['handle'],$this->quote));
+		$returnedData = $this->Database['handle']->query($query,PDO::FETCH_CLASS, self::FETCH_CLASS, array($atable,$this->Database['handle'],$this->Quote));
 		$returnedDataByCache = $this->putInCache($queryElements,$returnedData);
 		if($this->cacheEnabled and $affected) {
 			if(is_string($atable)) {

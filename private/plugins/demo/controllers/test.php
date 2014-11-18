@@ -1,19 +1,16 @@
 <?php
 
-//echo $routed_plugin;
-//echo 'test1';
-
-
 
 class TestController extends giController {
 	
-	
+	// this will respond to /demo/
 	public function indexAction() {
 	
 		$this->debugAction();
 		
 	}
 	
+	// this will respond to /demo/format/
 	public function formatAction() {
 	
 		/*
@@ -34,23 +31,34 @@ class TestController extends giController {
 		
 	}
 	
+	// this will NOT respond to /demo/debug/ as the method is private
 	private function debugAction() {
 	
-		var_dump($this->Core->Router);
-		die();
-		
+			$this->Core->Response->setType('text');
+		$this->Core->Response->setContent(var_export($this->Core->Router));
+
 	}
 	
+	// this will respond to /demo/helloWorld/
 	public function helloWorldAction() {
+
 		$this->Core->Response->setType('text');
 		$this->Core->Response->setContent('Hello world!');
-		$this->Core->Response->output();
+
 	}
 	
+	// this will respond to /demo/memoryTest/
 	public function memoryTestAction() {
 		
 		$this->Core->Response->setType('json');
 		$this->Core->Response->setContent(array('get_memory_usage'=>memory_get_usage()));
+		
+	}
+	
+	public function testDatabaseAction() {
+	
+			$this->Core->Response->setType('text');
+			$this->Core->Response->setContent($this->Core->Database->select('Accounts'));
 		
 	}
 	

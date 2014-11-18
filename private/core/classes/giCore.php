@@ -33,7 +33,6 @@ class giCore {
 		$this->Response 		= new giResponse();						// output formatting tool
 		$this->Router			= new giRouter();						// handles routing of requests
 		$this->Database			= new giDatabase(); 					// database abstraction layer
-		$this->Debug			= new giDebug();						// debugging helper
 		$this->Localization		= new giLocalization(); 				// help translating
 		$this->Security			= new giSecurity(); 					// security handler
 		
@@ -50,6 +49,7 @@ class giCore {
 			$this->Configuration['database']['username'],
 			$this->Configuration['database']['password'],
 			$this->Configuration['database']['hostname'],
+			$this->Configuration['memcache']['enabled'],
 			$this->Configuration['memcache']['prefix'],
 			$this->Configuration['memcache']['hostname'],
 			$this->Configuration['memcache']['port']

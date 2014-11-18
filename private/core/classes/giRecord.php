@@ -1,56 +1,21 @@
 <?php
 
-// represent each entry retrieved from the database
-class giDatabaseRecord {
-
-	/*********************************************************************************/
+// represent an entry (or record) retrieved from the database
+class giRecord {
 	
-	public		$id;
-	private		$Table;
+	public		$Id;
 	private		$Database;
-
-	/*********************************************************************************/
-
+	private		$Table;
+	private		$Columns;
+	
 	public function __construct($Table,$Database) {
 		$this->Table		= (string)	$Table;
 		$this->Database		= (object)	$Database;
 	}
 
-	/*********************************************************************************/
-	
-	public function __wakeup() {
-		global $giAbstractDatabase;
-		$this->Database = $giAbstractDatabase->handle;
-	}
-
-	/*********************************************************************************/
-	
-	public function __sleep() {
-		// remove the database connexion
-		$this->Database = null;
-
-		// attribute list
-		$attributeList = array();
-
-		// for each attribute
-		foreach(get_object_vars($this) as $anAttributeKey => $anAttributeValue) {
-			
-			// inject in the table
-			$attributeList[] = $anAttributeKey;
-			
-		}
-
-		// list all attributes to serialize
-		return($attributeList);
-	}
-
-	/*********************************************************************************/
-
 	public function __toString() {
-		return('[giDatabaseRecord:'.get_class($this).':'.ucfirst($this->Table).':'.$this->id.']');	
+		return(get_class($this).'/'.ucfirst($this->Table).'/'.$this->Id);	
 	}
-	
-	/*********************************************************************************/
 
 	public function asArray($raw=null) {
 
