@@ -144,7 +144,7 @@ class giRouter {
 		
 	}
 	
-	// check with controller is associated with 
+	// check witch controller is associated with current URL
 	private function checkController() {
 		
 		// iterate on the list to find the proper page
@@ -182,7 +182,6 @@ class giRouter {
 	// check if the script has been found or actually exists
 	private function checkScript() {
 	
-		
 		// we did not find the page in the sitemap 
 		if(!$this->Script) {
 			// clean the buffer
@@ -223,6 +222,14 @@ class giRouter {
 		
 		// if no parameter were specified at routing time
 		if(!$this->Options['parameters']) {
+			// if something has been posted
+			if($_POST and count($_POST)) {
+				// for each posted key
+				foreach($_POST as $aParameterName => $aParameterValue) {
+					// set the parameter
+					$this->Parameters->$aParameterName = $aParameterValue;
+				}
+			}
 			// nothing special to do about it
 			return;
 		}
