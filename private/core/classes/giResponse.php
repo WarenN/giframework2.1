@@ -66,9 +66,6 @@ class giResponse {
 	// this methods formats content and set headers according to the paremeters
 	public function formatContent() {
 		
-		// access global configuration + localization handler + request handler
-		global $giConfiguration,$giRequest,$giLocalization;
-		
 		// choose the proper mimetype
 		switch($this->Type) {
 			
@@ -250,6 +247,7 @@ class giResponse {
 				
 				// get mimetype
 				$Fileinfo = finfo_open(FILEINFO_MIME);
+				
 				// set mimetype
 				$this->setHeader('Content-type',finfo_file($Fileinfo,$this->getContent()));
 				
@@ -260,7 +258,7 @@ class giResponse {
 			default:
 			
 				// output an error
-				$this->error500('giOutput: missing_type');
+				$this->error500('giResponse->formatContent() : Missing type');
 				
 			break;
 			
@@ -319,8 +317,22 @@ class giResponse {
 			
 		}
 			
-		// set content language
+		// set content language (DISABLED BECAUSE OF SCOPE ISSUES)
 		//$this->setHeader('Content-Language',$giLocalization->getLanguage());
+		
+		// if in local mode
+		if($this->Environment == 'local') {
+		
+			// this WILL BE moved away from here
+			function convertSize($size) {
+				$unit=array('b','Kb','Mb','Gb','Tb','Pb');
+				return @round($size/pow(1024,($i=floor(log($size,1024)))),2).' '.$unit[$i];
+			}
+		
+			// provide the memory usage
+			$this->setHeader('X-Memory-Usage',convertSize(memory_get_usage(true)));
+			
+		}
 		
 		// compute the final execution time
 		$this->ExecutionTime = round(microtime(true) - $this->StartTime,3).' sec';

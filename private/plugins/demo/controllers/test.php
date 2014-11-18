@@ -41,6 +41,19 @@ class TestController extends giController {
 		
 	}
 	
+	public function helloWorldAction() {
+		$this->Core->Response->setType('text');
+		$this->Core->Response->setContent('Hello world!');
+		$this->Core->Response->output();
+	}
+	
+	public function memoryTestAction() {
+		
+		$this->Core->Response->setType('json');
+		$this->Core->Response->setContent(array('get_memory_usage'=>memory_get_usage()));
+		
+	}
+	
 	
 }
 
