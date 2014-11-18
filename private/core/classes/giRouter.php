@@ -118,11 +118,6 @@ class giRouter {
 		$this->checkSecurity();
 		// check parameters
 		$this->checkParameters();
-		// return useful informations to giCore/main
-		return(array(
-			$this->Script,
-			$this->Class
-		));
 
 	}
 	
@@ -134,7 +129,7 @@ class giRouter {
 			// update the debug status
 			$this->Debug	= true;
 			// clean url
-			$this->Request	= str_replace('@@','',$this->rawRequest);
+			$this->Request	= str_replace('@@','',$this->Request);
 		}
 		// if no request URI at all
 		if(!$this->Request) {
