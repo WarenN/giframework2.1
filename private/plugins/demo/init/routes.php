@@ -11,5 +11,8 @@ $this->Router->route('/controller/main.ajax=','demo/main',2);
 // 404 route (can be in any plugin but you have to declare the url in the common.ini)
 $this->Router->route('/404/','demo/not-found');
 
+// exception route (as a test)
+$this->Router->route('/exception/','demo/exception');
+
 
 ?>

@@ -1,5 +1,5 @@
 <?php
-
+/*
 // provides a string meeting some requierments
 function giFormatString($aString,$someOptions=null) {
 	$aString			= (string)	$aString;
@@ -32,63 +32,6 @@ function giFormatString($aString,$someOptions=null) {
 		$aString = strip_tags($aString);
 	}
 	return($aString);
-}
-
-// include a file from a partial folder (from a plugin)
-function giPartial($partial) {		
-	// access the request handler
-	global $giRequest;
-	// remove double points as a security
-	str_replace('..','.',$partial);
-	// build the fullpath
-	$partialPath = dirname($giRequest->getHandler()).'/../partials/'.$partial.'.php';
-	// if the file is there
-	if(file_exists($partialPath)) {
-		// include that file
-		include($partialPath);
-	}
-	// the file is missing
-	else {
-		// access the output
-		global $giOutput;
-		// provide an error
-		$giOutput->error500('missing_partial '.$partialPath);	
-	}
-}
-
-// include a file from the components folder
-function giComponent($component) {
-	// include the component
-	include('../private/core/components/'.$component.'.php');
-}
-
-/*
-// return a string for the specified key, depending on the current language
-function giStringFor($localeKey) {
-	global $giLocalization;
-	var_dump($giLocalization,$giCore,$giSecurity);
-	return($giLocalization->getLocale($localeKey));
-}
-*/
-
-// if the method is post
-function giIsMethodPost() {
-	if($_SERVER['REQUEST_METHOD'] == 'POST') {
-		return(true);	
-	}
-	else {
-		return(false);
-	}
-}
-
-// if the method is get
-function giIsMethodGet() {
-	if($_SERVER['REQUEST_METHOD'] == 'GET') {
-		return(true);	
-	}
-	else {
-		return(false);
-	}
 }
 
 // convert bytes to human size
@@ -167,6 +110,7 @@ function giSlugify($aString, $appendExtension = true) {
 	}
 	return($aSlugifiedString);
 }
+*/
 
 function giBuildHtmlOptions($optionsArray=null) {
 	if($optionsArray) {
