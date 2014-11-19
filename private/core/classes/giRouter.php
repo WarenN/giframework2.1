@@ -200,6 +200,11 @@ class giRouter {
 			// stop here
 			return;
 		}
+		// if the script doesn't exist
+		elseif(!file_exists($this->Script)) {
+			// exception
+			Throw new Exception('giRouter->checkScript() : missing controller script ['.$this->Script.']');
+		}
 		
 	}
 	

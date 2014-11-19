@@ -303,7 +303,7 @@ class giCore {
 	
 	// initialize PHP parameters
 	private function initPHP() {
-	
+
 		// set the timezone
 		date_default_timezone_set('Europe/Paris');
 		
@@ -375,29 +375,6 @@ class giCore {
 			elseif(strpos($_SERVER['HTTP_HOST'],'localhost') !== false) {
 				// set as local
 				$this->Environment = 'local';
-			}
-		}
-	}
-	
-	// access configuration parameters
-	public function get($section=null,$parameter=null) {
-		
-		// if no specific section is given
-		if(!$section) {
-			// return the whole configuration
-			return($this->Configuration);
-		}
-		// a section is requested
-		else {
-			// if no specific parameter is requested
-			if(!$parameter) {
-				// return the section
-				return($this->Configuration[$section]);
-			}
-			// a specific parameter is requested
-			else {
-				// return only the parameter
-				return($this->Configuration[$section][$parameter]);
 			}
 		}
 	}

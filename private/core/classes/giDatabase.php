@@ -541,117 +541,6 @@ class giDatabase {
 		return($fts);
 	}
 	
-	
-	
-	public function updateOutdated($aTable) {
-		// if caching is enabled
-		if($this->Cache['enabled']) {
-			// try to update
-			$oudatedUpdate = $this->Cache['handle']->replace($this->Cache['prefix'].'_lu_'.$aTable,time());	
-			// if the update failed
-			if(!$outdatedUpdate) {
-				// set the last modification date fot this table
-				$this->Cache['handle']->set($this->Cache['prefix'].'_lu_'.$aTable,time());
-			}	
-		}	
-	}
-	
-	// check if an sql query is in cache
-	private function isInCache($queryElements,$aTable,$lagTolerance) {
-		// the cache is enabled
-		if($this->Cache['enabled']) {
-			// generate a hash for this specific query
-			$aQueryHash = $this->generateQueryHash($queryElements);
-			// get the last cached query
-			$lastCachedQuery = $this->Cache['handle']->get($this->Cache['prefix'].'_qt_'.$aQueryHash);
-			// if there is no cached query
-			if(!$lastCachedQuery) {
-				// nothing to return
-				return(null);	
-			}
-			// if there is no table specified we have no idea what's going on
-			if(!$aTable) {
-				// nothing to return from the cache
-				return(null);	
-			}
-			// check the last table update
-			$lastTableUpdate = $this->Cache['handle']->get($this->Cache['prefix'].'_lu_'.$aTable);
-			// if there is no lag tolerance
-			if(!$lagTolerance or $lagTolerance == 0) {
-				// if we don't know the last update date of the able
-				if(!$lastTableUpdate) {
-					// set the last modification date for the next time
-					$this->Cache['handle']->set($this->Cache['prefix'].'_lu_'.$aTable,time());
-					// returned the last cached query
-					return($this->Cache['handle']->get($this->Cache['prefix'].'_qd_'.$aQueryHash));
-				}
-				// if the cached query is posterior to the last table update
-				if($lastCachedQuery > $lastTableUpdate) {
-					// get the cached data and return it
-					return($this->Cache['handle']->get($this->Cache['prefix'].'_qd_'.$aQueryHash));	
-				}
-				// the last cached query is anterior to the last table update
-				else {
-					// nothing coherent to return
-					return(null);
-				}
-			}
-			// else there is a lag tolerance
-			else {
-				// if the last cached query is fresh enough
-				if($lastCachedQuery + $lagTolerance > time()) {
-					// get the cached data and return it
-					return($this->Cache['handle']->get($this->Cache['prefix'].'_qd_'.$aQueryHash));
-				}
-				// else the last cached query is too old
-				else {
-					// nothing to return
-					return(null);	
-				}
-			}
-		}
-		// cache is disabled
-		else {
-			// nothing to return
-			return(null);
-		}
-	}
-	
-	// put an SQL query result in cache
-	private function putInCache($queryElements,$queryResult) {
-		// if the cache is enabled
-		if($this->Cache['enabled']) {
-			// generate the query hash
-			$aQueryHash = $this->generateQueryHash($queryElements);
-			// if the query was a passthru query we have an object and not an array
-			if(is_object($queryResult) and get_class($queryResult) == 'PDOStatement') {
-				// declare the actual results array
-				$queryResultArray = array();
-				// we must iterate
-				foreach($queryResult as $aResult) {
-					// push the result in the array
-					$queryResultArray[] = $aResult;
-				}
-				// replace the object by the array
-				$queryResult = $queryResultArray;
-			}
-			// put the query result in cache
-			$seta= $this->Cache['handle']->set($this->Cache['prefix'].'_qd_'.$aQueryHash,$queryResult);
-			// set the query time
-			$setb= $this->Cache['handle']->set($this->Cache['prefix'].'_qt_'.$aQueryHash,time());
-			// return the query result
-			return($queryResult);
-		}
-	}
-	
-	public function flushCache() {
-		// the cache is enabled
-		if($this->Cache['enabled']) {
-			// flush the cache
-			return($this->Cache['handler']->flush());	
-		}
-	}
-	
 	public function delete($atable,$conditions,$operator=null) {
 		// if we don't have a connexion yet
 		if(!$this->Database['handle']) {
@@ -970,33 +859,52 @@ class giDatabase {
 		return($return);
 	}
 	
+	// pass a rew query to the database
 	public function raw($query,$atable=null,$lag=null,$affected=null) {
 		// if we don't have a connexion yet
 		if(!$this->Database['handle']) {
 			// connect to the database
 			$this->connect();	
 		}
+		// set the query as an array (for caching purpose)
 		$queryElements				= array($query);
+		// check if the query is in cache, and has not expired
 		$cachedData 				= $this->isInCache($queryElements,$atable,$lag);
+		// if the query is found in the cache
 		if($cachedData !== null) {
+			// retun the cached query
 			return($cachedData);
 		}
+		// query the database
 		$returnedData = $this->Database['handle']->query($query,PDO::FETCH_CLASS, self::FETCH_CLASS, array($atable,$this->Database['handle'],$this->Quote));
+		// put the returned data in cache
 		$returnedDataByCache = $this->putInCache($queryElements,$returnedData);
+		// if we changed something in the database the cache must be notified to prevent giving outdated results
 		if($this->cacheEnabled and $affected) {
+			// if only one table has been affected
 			if(is_string($atable)) {
+				// update the last modification date of that table
 				$this->updateOutdated($atable);
 			}
+			// if multiple table were affected
 			if(is_array($affected)) {
+				// for each of those tables
 				foreach($atable as $aTable) {
+					// set the last modification date of those tables
 					$this->updateOutdated($aTable);
 				}
 			}
 		}
+		// if the cache is enabled and we got there
 		if($this->cacheEnabled) {
+			// return data provided by the caching method /!\ SHOULD NOT EXIST, $returnedData should contain the same data /!\ potential bug
 			return($returnedDataByCache);	
 		}
-		return($returnedData);
+		// if the cache is disabled
+		else {
+			// return the data from the database directly
+			return($returnedData);
+		}
 	}
 	
 	// request an advanced query
@@ -1005,6 +913,116 @@ class giDatabase {
 		// return a new query object
 		return(new giQuery($this->Database));
 		
+	}
+	
+	public function updateOutdated($aTable) {
+		// if caching is enabled
+		if($this->Cache['enabled']) {
+			// try to update
+			$oudatedUpdate = $this->Cache['handle']->replace($this->Cache['prefix'].'_lu_'.$aTable,time());	
+			// if the update failed
+			if(!$outdatedUpdate) {
+				// set the last modification date fot this table
+				$this->Cache['handle']->set($this->Cache['prefix'].'_lu_'.$aTable,time());
+			}	
+		}	
+	}
+	
+	// check if an sql query is in cache
+	private function isInCache($queryElements,$aTable,$lagTolerance) {
+		// the cache is enabled
+		if($this->Cache['enabled']) {
+			// generate a hash for this specific query
+			$aQueryHash = $this->generateQueryHash($queryElements);
+			// get the last cached query
+			$lastCachedQuery = $this->Cache['handle']->get($this->Cache['prefix'].'_qt_'.$aQueryHash);
+			// if there is no cached query
+			if(!$lastCachedQuery) {
+				// nothing to return
+				return(null);	
+			}
+			// if there is no table specified we have no idea what's going on
+			if(!$aTable) {
+				// nothing to return from the cache
+				return(null);	
+			}
+			// check the last table update
+			$lastTableUpdate = $this->Cache['handle']->get($this->Cache['prefix'].'_lu_'.$aTable);
+			// if there is no lag tolerance
+			if(!$lagTolerance or $lagTolerance == 0) {
+				// if we don't know the last update date of the able
+				if(!$lastTableUpdate) {
+					// set the last modification date for the next time
+					$this->Cache['handle']->set($this->Cache['prefix'].'_lu_'.$aTable,time());
+					// returned the last cached query
+					return($this->Cache['handle']->get($this->Cache['prefix'].'_qd_'.$aQueryHash));
+				}
+				// if the cached query is posterior to the last table update
+				if($lastCachedQuery > $lastTableUpdate) {
+					// get the cached data and return it
+					return($this->Cache['handle']->get($this->Cache['prefix'].'_qd_'.$aQueryHash));	
+				}
+				// the last cached query is anterior to the last table update
+				else {
+					// nothing coherent to return
+					return(null);
+				}
+			}
+			// else there is a lag tolerance
+			else {
+				// if the last cached query is fresh enough
+				if($lastCachedQuery + $lagTolerance > time()) {
+					// get the cached data and return it
+					return($this->Cache['handle']->get($this->Cache['prefix'].'_qd_'.$aQueryHash));
+				}
+				// else the last cached query is too old
+				else {
+					// nothing to return
+					return(null);	
+				}
+			}
+		}
+		// cache is disabled
+		else {
+			// nothing to return
+			return(null);
+		}
+	}
+	
+	// put an SQL query result in cache
+	private function putInCache($queryElements,$queryResult) {
+		// if the cache is enabled
+		if($this->Cache['enabled']) {
+			// generate the query hash
+			$aQueryHash = $this->generateQueryHash($queryElements);
+			// if the query was a passthru query we have an object and not an array
+			if(is_object($queryResult) and get_class($queryResult) == 'PDOStatement') {
+				// declare the actual results array
+				$queryResultArray = array();
+				// we must iterate
+				foreach($queryResult as $aResult) {
+					// push the result in the array
+					$queryResultArray[] = $aResult;
+				}
+				// replace the object by the array
+				$queryResult = $queryResultArray;
+			}
+			// put the query result in cache
+			$this->Cache['handle']->set($this->Cache['prefix'].'_qd_'.$aQueryHash,$queryResult);
+			// set the query time
+			$this->Cache['handle']->set($this->Cache['prefix'].'_qt_'.$aQueryHash,time());
+			// return the query result
+			return($queryResult);
+		}
+	}
+	
+	// this will flush all the cached queries
+	public function flushCache() {
+		// the cache is enabled
+		if($this->Cache['enabled']) {
+			// flush the cache
+			return($this->Cache['handler']->flush());	
+		}
 	}
 	
 }

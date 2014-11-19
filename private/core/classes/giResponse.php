@@ -363,17 +363,9 @@ class giResponse {
 	
 	// output the document to the browser
 	public function output() {
-		
+
 		// compute the final execution time
-		$this->ExecutionTime = round(microtime(true) - giCore::get('start_time'),3).' sec';
-
-		// if type is html and a google tracking id is set and we're in production
-		if($this->Type == 'html' and $this->googleAnalyticsId and $this->Environment == 'prod') {
-
-			// push the tracking code
-			$this->Content .= $this->getTrackerCode();
-
-		}
+		$this->ExecutionTime = round(microtime(true) - $this->StartTime,3).' sec';
 		
 		// format the document first
 		$this->formatContent();
@@ -728,8 +720,6 @@ class giResponse {
 		return(strtolower(strip_tags($this->Charset)));
 	}
 	
-	/* ********************** */
-	
 	// this method will freeze the generated content if caching is enabled
 	private function freezeContent() {
 		
@@ -830,20 +820,6 @@ class giResponse {
 		
 	}
 	
-	
-	public function setDebugCode($debugCode) {
-		if($this->isNotNull($debugCode)) {
-			$this->Obfuscate	= (boolean)	false;
-			$this->Indent	= (boolean)	true;
-		}
-		if($this->isNotNull($this->Content)) {
-			$this->Content 			.= $debugCode;
-		}
-		else {
-			$this->Content 			= (string)	$debugCode;
-		}
-		
-	}
 	public function setContent($Content) {
 		// force setting content
 		$this->Content = $Content;
@@ -914,31 +890,6 @@ class giResponse {
 	public function clearCss() {
 		$this->Stylesheets = array();
 	}
-
-	public function getTrackerCode() {
-
-			global $giConfiguration,$giAuthentication;
-return('
-		<script type="text/javascript">
-			var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-			document.write(unescape("%3Cscript src=\'" + gaJsHost + "google-analytics.com/ga.js\' type=\'text/javascript\'%3E%3C/script%3E"));
-		</script>
-		<script type="text/javascript">
-			try {
-			var pageTracker = _gat._getTracker("'.$giConfiguration->getAnalyticsId().'");
-			pageTracker._setCustomVar(
-				1,
-				"giLogin",
-				"'.$giAuthentication->getSelfLogin().'",
-				1
-			);
-			pageTracker._trackPageview();
-			} catch(err) {}
-		</script>
-');			
-
-		
-	}
 	
 	// converts an array to csv table
 	private function arrayToCSV($contentArray) {
@@ -964,42 +915,60 @@ return('
 	
 	// converts an array to xml code
 	private function arrayToXML($contentArray, &$xmlContent) {
+		// for each element in the array
 		foreach($contentArray as $key => $value) {
+			// if the value itself is an array
 			if(is_array($value)) {
+				// if the key is numeric
 				if(!is_numeric($key)){
+					// add a subnode
 					$subnode = $xmlContent->addChild("$key");
+					// recurse
 					$this->arrayToXML($value, $subnode);
 				}
 				else{
+					// add a subnode and alter the key
 					$subnode = $xmlContent->addChild("item$key");
+					// recurse
 					$this->arrayToXML($value, $subnode);
 				}
 			}
+			// value is not an array
 			else {
+				// simply add the child
 				$xmlContent->addChild("$key","$value");
 			}
 		}
 	}
-
+	
+	// removes anything that is not necessary 
 	private function obfuscateCode() {
+		// get the content of the page
 		$sourceCode = $this->getContent();
+		// list characters to removes
 		$source		= array("\t","\n","\r");
+		// remove said characters
 		$sourceCode = str_replace($source,"",$sourceCode);
+		// remove double spaces
 		$sourceCode = str_replace("  "," ",$sourceCode);
+		// update the content
 		$this->setContent($sourceCode);
 	}
 
+	// indent HTML code
 	private function indentCode() {
+		// get the current content
 		$sourceCode = $this->getContent();
+		// set the indenter symbol
 		$indenter	= "\t";
-		$sourceCode 	= str_replace("\n", '', $sourceCode);
-		$sourceCode 	= str_replace("\r", '', $sourceCode);
-		$sourceCode 	= str_replace("\t", '', $sourceCode);
+		// remove all specific symbols
+		$sourceCode 	= str_replace(array("\t","\n","\r"), '', $sourceCode);
 		$sourceCode 	= ereg_replace(">( )*", ">", $sourceCode);
 		$sourceCode 	= ereg_replace("( )*<", "<", $sourceCode);
 		$level 		= 0;
 		$sourceCode_len = strlen($sourceCode);
 		$pt 		= 0;
+		// parse each caracter
 		while ($pt < $sourceCode_len) {
 			if ($sourceCode{$pt} === '<') {
 				$started_at = $pt;
@@ -1041,8 +1010,10 @@ return('
 			} else {
 				break;
 			}
-			}
+		}
+		// re-assemble all the lines
 		$sourceCode = implode($array, "\n");
+		// update the content
 		$this->setContent($sourceCode);
 	}
 
