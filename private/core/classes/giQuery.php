@@ -144,6 +144,19 @@ class giQuery {
 			// those actions being incompatible we throw an exception
 			Throw new Exception("giQuery->insert() : An incompatible action already exists : {$this->Action}");
 		}
+		// check if we have an array
+		if(is_array($columns_and_values)) {
+			// for each column and value
+			foreach($columns_and_values as $column => $value) {
+				// if the column is not numeric
+				if(!is_numeric($column)) {
+					// push the column
+					$this->Inserts[] = $column;
+					// check for automatic conversion and push in place
+					$this->Values[] = $this->convert($column,$value);
+				}
+			}
+		}
 		// return self to the next method
 		return($this);
 	}
@@ -177,7 +190,14 @@ class giQuery {
 	
 	// select another table to join on
 	public function join($table_and_id) {
-		
+		// if table_and_id is an array
+		if(is_array($table_and_id)) {
+			// for each table/column
+			foreach($table_and_id as $table => $column) {
+				// do something
+				// ------------	
+			}
+		}
 		// return self to the next method
 		return($this);
 	}
@@ -196,9 +216,9 @@ class giQuery {
 						$this->Operator = 'AND';	
 					}
 					// save the condition
-					$this->Conditions[] = "{$this->Operator} ( {$this->Database->quote($column)} = :{$column} )";
+					$this->Conditions[] = "{$this->Operator} ( {$column} = :{$column} )";
 					// save the value
-					$this->Values[] = array(":{$column}"=>$value);
+					$this->Values[":{$column}"] = $value;
 				}
 			}	
 		}
@@ -208,7 +228,11 @@ class giQuery {
 	
 	// add into for inserts
 	public function into($table) {
-		
+		// if $table is set
+		if(is_string($table) and $table) {
+			// set the table
+			$this->Table = $table;
+		}
 		// return self to the next method
 		return($this);
 	}
@@ -352,6 +376,24 @@ class giQuery {
 			$this->Query = $this->Action;
 		}
 		
+		// if action is insert
+		if($this->Action == 'INSERT') {
+			// if the table is missing
+			if(!$this->Table) {
+				// throw an exception
+				Throw new Exception('giQuery->execute() : Missing INTO');
+			}
+			// if missing values
+			if(!$this->Values or !count($this->Values)) {
+				// throw an exception
+				Throw new Exception('giQuery->execute() : Missing VALUES');	
+			}
+			// set destination and columns
+			$this->Query .= " INTO $this->Table ( " . implode(', ',$this->Inserts) . " )";
+			// set the placeholders
+			$this->Query .= " VALUES ( :".trim(implode(', :',$this->Inserts),', ')." )";
+		}
+		
 		// if action is select
 		if($this->Action == 'SELECT') {
 			// if the table is missing
@@ -359,7 +401,6 @@ class giQuery {
 				// throw an exception
 				Throw new Exception('giQuery->execute() : Missing FROM');	
 			}
-			
 			// if columns are set for selection
 			if(count($this->Selects)) {
 				// assemble all the columns
@@ -393,14 +434,14 @@ class giQuery {
 		
 		
 		// if ordering options are set
-		if(count($this->Order) and $this->Action == 'SELECT') {
+		if($this->Action == 'SELECT' and count($this->Order)) {
 			// assemble orders
 			$this->Order = implode(', ',$this->Order);
 			// add ordering to the query
 			$this->Query .= " ORDER BY $this->Order";
 		}
 		// if limit options are set
-		if(count($this->Limit) and $this->Action == 'SELECT') {
+		if($this->Action == 'SELECT' and count($this->Limit)) {
 			// assemble the limit options to the query
 			$this->Query .= " LIMIT {$this->Limit[0]},{$this->Limit[1]}";
 		}
@@ -422,7 +463,6 @@ class giQuery {
 			// throw an exception
 			Throw new Exception('giQuery->execute() : Failed to execute query ['.$exception_infos.']');
 		}
-
 		// fetch all results
 		$this->Result = $this->Prepared->fetchAll(
 			// fetch as an object
@@ -432,11 +472,28 @@ class giQuery {
 			// and pass it some arguments
 			array($this->Table,$this->Database)
 		);
-
 		
-		// place in cache
-		// --------------
+		// if action is not insert nor delete and succeeded
+		if($this->Action != 'INSERT' and $this->Action != 'DELETE' and $this->Success) {
+			// place in cache
+			// --------------
+		}
 		
+		// if the query was an insert and it succeeded
+		if($this->Action == 'INSERT' and $this->Success) {
+			// update the cache
+			// ----------------
+			
+			// instanciate a new query
+			$this->Result = new giQuery($this->Database,$this->Cache);
+			// get the newly inserted element from its id
+			return($this->Result
+				->select()
+				->from($this->Table)
+				->where(array('id'=>$this->Database->lastInsertId()))
+				->execute()
+			);
+		}
 		// return the results
 		return($this->Result);
 	}
@@ -555,6 +612,52 @@ class giQuery {
 			// return the query result
 			return($queryResult);
 		}
+	}
+	
+	// convert types like dates and arrays
+	private function convert($column,$value) {
+		// if we find a file keyword
+		if(strpos($column,'_file') !== false) {
+			// store that file and replace it by a json value in the database
+			// array(path=>null,size=>null,mime=>null)
+		}
+		// if we find a serialization keyword
+		elseif(strpos($column,'_array') !== false) {
+			// encode the content as JSON
+			$value = json_encode($value);
+		}
+		// if we are dealing with a date
+		elseif(strpos($column,'_date') !== false) {
+			// if the date is formated with two slashs
+			if(substr_count($column,'/') == 2) {
+				// set the separator
+				$separator = '/';
+			}
+			// if the date is formated with two dots
+			elseif(substr_count($column,'.') == 2) {
+				// set the separator
+				$separator = '.';
+			}
+			// if the date is formated with two -
+			elseif(substr_count($column,'-') == 2) {
+				// set the separator
+				$separator = '-';
+			}
+			// separator in unknown, we assume it is already a timestamp
+			else {
+				// clean it just to make sure
+				$value = preg_replace('/\D/','',$value);
+			}
+			// if we know the separator
+			if($separator) {
+				// explode the date's elements
+				list($day,$month,$year) = explode($separator,$value);
+				// create a timestamp
+				$value = mktime(0,0,1,$month,$day,$year);
+			}
+		}	
+		// return the value
+		return($value);
 	}
 
 }

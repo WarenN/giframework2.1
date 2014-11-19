@@ -66,16 +66,33 @@ class TestController extends giController {
 		
 	}
 	
+	public function insertQueryAction() {
+	
+		$result = $this->Core->Database->query()
+		->insert(array(
+			'login'=>substr(md5(rand(0,99999)),0,4),
+			'password'=>md5(rand(0,99999)),
+			'id_level'=>rand(0,99),
+			'last_login_date'=>'18/11/2014',
+			'rights_array'=>array('mod_'.rand(9,999),'mod_'.rand(99,999)),
+			'is_enabled'=>rand(0,1)
+		))
+		->into('accounts')
+		->execute();
+		
+		var_dump($result);
+		
+	}
+	
 	public function testQueryAction() {
 	
 		$query = $this->Core->Database->query();
-		//var_dump($query);
-		//die();
 		$result = $query
-		->select(array('id','login','password'))
+//		->select(array('id','login','password'))
 //		->select(array('max'=>'id','0'=>'login','1'=>'password','2'=>'id'))
+		->select()
 		->from('accounts')
-//		->where(array('id_level'=>'1','id'=>'1'))
+		->where(array('is_enabled'=>'1'))
 //		->addAnd()
 //		->where(array('login'=>'root'))
 //		->addOr()
