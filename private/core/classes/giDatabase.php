@@ -561,18 +561,22 @@ class giDatabase {
 		return($return);
 	}
 	
+	// common select
 	public function select($atable,$conditions=null,$operator=null,$orderby=null,$limitto=null,$columns=null,$lag=null) {
 		// if we don't have a connexion yet
 		if(!$this->Database['handle']) {
 			// connect to the database
 			$this->connect();	
 		}
+		// assemble all query elements in an array
 		$queryElements				= array($atable,$conditions,$operator,$orderby,$limitto,$columns);
+		// check in the query is cached
 		$cachedData 				= $this->isInCache($queryElements,$atable,$lag);
+		// if the query is founed in the cache
 		if($cachedData !== null) {
+			// return result from the cache
 			return($cachedData);
 		}
-		if(count($conditions) == 0) { $conditions= null; }
 		list($conditions,$values)	= (array)	$this->buildConditions($conditions,$operator);
 		$orderby					= (string)	$this->buildOrderBy($orderby);
 		$limitto					= (string)	$this->buildLimitTo($limitto);
@@ -587,6 +591,7 @@ class giDatabase {
 		return($fetch);
 	}
 	
+	// classic search
 	public function search($atable,$conditions,$operator=null,$orderby=null,$limitto=null,$columns=null,$lag=null) {
 		// if we don't have a connexion yet
 		if(!$this->Database['handle']) {
@@ -612,9 +617,8 @@ class giDatabase {
 		// return an array of database-connected-objects
 		return($fetch);	
 	}
-	/*
-	 *  FTS (full text search)
-	 */
+
+	// fulltext search
 	public function fts($atable,$search_columns,$search_value,$orderby=null,$limitto=null,$columns=null) {
 		// if we don't have a connexion yet
 		if(!$this->Database['handle']) {
@@ -623,6 +627,7 @@ class giDatabase {
 		}
 		// sqlite implementation only
 		if($this->Database['driver'] != 'sqlite') {
+			// return nothing
 			return(false);
 		}
 		// if the search is empty we refuse to search
@@ -643,8 +648,6 @@ class giDatabase {
 	}
 	
 	/*
-	 *  find (JJL addon)
-	 */
 	public function find($atable,$conditions,$operator=null,$orderby=null,$limitto=null,$columns=null,$lag=null) {
 		// if we don't have a connexion yet
 		if(!$this->Database['handle']) {
@@ -670,6 +673,7 @@ class giDatabase {
 		// return an array of database-connected-objects
 		return($fetch);
 	}
+	*/
 	
 	public function update($atable,$values,$conditions,$operator=null) {
 		// if we don't have a connexion yet
@@ -840,22 +844,34 @@ class giDatabase {
 			// connect to the database
 			$this->connect();	
 		}
+		// put the query elements in an array
 		$queryElements				= array($atable,$field,$conditions,$operator);
+		// check if the query is in cache
 		$cachedData 				= $this->isInCache($queryElements,$atable,$lag);
+		// if cache has been found
 		if($cachedData !== null) {
+			// return said cache
 			return($cachedData);
 		}
-		if(count($conditions) == 0) { $conditions= null; }
-		if($field==null) 			{ return(false); }
-		else 						{ $field	= $this->quote($field); }
-		$table 						= $this->buildTable($atable);
-		list($conditions,$values)	= (array)	$this->buildConditions($conditions,$operator);
-		$query						= (string)	'SELECT MAX('.$field.') FROM '.$table.$conditions;
-		$prepare					= (object)	$this->Database['handle']->prepare($query);
-		$execute					= (object)	$prepare->execute($values);
+		// escape the field
+		$field						= $this->quote($field);
+		// escape the field
+		$table 						= $this->quote($atable);
+		// build the conditions
+		list($conditions,$values)	= $this->buildConditions($conditions,$operator);
+		// assemble the query string
+		$query						= 'SELECT MAX('.$field.') FROM '.$table.$conditions;
+		// prepare the statement
+		$prepare					= $this->Database['handle']->prepare($query);
+		// execute the query
+		$execute					= $prepare->execute($values);
+		// fetch all results as an array
 		$fetch						= (array)	$prepare->fetchAll(PDO::FETCH_COLUMN);
+		// get the first result
 		$return						= (integer)	$fetch[0];
+		// put the result in cache
 		$this->putInCache($queryElements,$return);
+		// return the value
 		return($return);
 	}
 	

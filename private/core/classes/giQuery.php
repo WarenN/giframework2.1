@@ -2,8 +2,17 @@
 
 class giQuery {
 
-	protected $Database;
-	protected $Query;
+	protected	$Database;
+	protected	$Query;
+	
+	protected	$Selects;
+	protected	$Joins;
+	protected	$Operators;
+	protected	$Conditions;
+	protected	$Updates;
+	protected	$Inserts;
+	protected	$Order;
+	protected	$Limit;
 
 	// instanciate a new query
 	public function __construct() {
@@ -15,51 +24,76 @@ class giQuery {
 
 	}
 	
+	// passrthu a query with values in needed
+	public function query($query,$values=null) {
+		
+	}
+	
 	// first main method
-	public function select() {
+	public function select($array=null) {
 		
 	}
 	
 	// second main method
-	public function set() {
+	public function update($columns_and_values) {
+		
+	}
+	
+	// insert data
+	public function insert($columns_and_values) {
 		
 	}
 	
 	// select the table
-	public function from() {
+	public function from($table) {
 		
 	}
 	
 	// select another table to join on
-	public function join() {
+	public function join($table_and_id) {
 		
 	}
 	
 	// add a condition
-	public function where() {
+	public function where($conditions) {
 		
 	}
 	
+	// add into for inserts
+	public function into($table) {
+		
+	}
+	
+	public function addAnd() {
+	}
+	
+	public function addOr() {
+	}
+	
 	// shortcuts
-	public function whereStartsWith() {
+	public function whereStartsWith($column,$value) {
 	}
-	public function whereEndWith() {
+	public function whereEndWith($column,$value) {
 	}
-	public function whereContains() {
+	public function whereContains($column,$value) {
 	}
-	public function whereGreaterThan() {
+	public function whereMatch($column,$value) {	
 	}
-	public function whereLowerThan() {
+	public function whereHigherThan($column,$value) {
 	}
-	public function whereBetween() {
+	public function whereLowerThan($column,$value) {
 	}
-	public function whereNull() {
+	public function whereBetween($column,$lower,$higher) {
 	}
-	public function whereNotNull() {
+	public function whereEmpty($column) {
 	}
-	public function whereTrue() {
+	public function whereNull($column) {
 	}
-	public function whereFalse() {
+	public function whereNotNull($column) {
+	}
+	public function whereTrue($column) {
+	}
+	public function whereFalse($column) {
 	}
 	
 	// add an order clause
@@ -75,6 +109,16 @@ class giQuery {
 	// execute the query
 	public function execute() {
 		
+	}
+	
+	// get the results
+	public function fetchObjects() {
+		
+	}
+	
+	// get the results
+	public function fetchArray() {
+
 	}
 
 
