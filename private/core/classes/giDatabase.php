@@ -926,8 +926,14 @@ class giDatabase {
 	// request an advanced query
 	public function query() {
 	
+		// if we don't have a connexion yet
+		if(!$this->Database['handle']) {
+			// connect to the database
+			$this->connect();	
+		}
+	
 		// return a new query object
-		return(new giQuery($this->Database));
+		return(new giQuery($this->Database['handle'],$this->Cache['handle']));
 		
 	}
 	

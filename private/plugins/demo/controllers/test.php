@@ -66,6 +66,26 @@ class TestController extends giController {
 		
 	}
 	
+	public function testQueryAction() {
+	
+		$query = $this->Core->Database->query();
+		//var_dump($query);
+		//die();
+		$query
+		->select()
+		->from('accounts')
+		->addAnd()
+		->where(array('id_level'=>'1'))
+		->addOr()
+		->whereLowerThan('id','999')
+		->orderBy(array('id'=>'ASC'))
+		->limitTo(0,10);
+		
+		var_dump($query);
+		die();
+		
+	}
+	
 	
 }
 
