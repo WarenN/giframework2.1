@@ -71,17 +71,24 @@ class TestController extends giController {
 		$query = $this->Core->Database->query();
 		//var_dump($query);
 		//die();
-		$query
-		->select()
+		$result = $query
+		->select(array('id','login','password'))
+//		->select(array('max'=>'id','0'=>'login','1'=>'password','2'=>'id'))
 		->from('accounts')
-		->addAnd()
-		->where(array('id_level'=>'1'))
-		->addOr()
-		->whereLowerThan('id','999')
-		->orderBy(array('id'=>'ASC'))
-		->limitTo(0,10);
-		
-		var_dump($query);
+//		->where(array('id_level'=>'1','id'=>'1'))
+//		->addAnd()
+//		->where(array('login'=>'root'))
+//		->addOr()
+//		->whereLowerThan('id','999')
+//		->where(array('password'=>'eg5§dby'))
+//		->insert(array()) // crash test
+//		->orderBy(array('id'=>'ASC','login'=>'DESC'))
+//		->limitTo(0,10)
+		->execute();
+		var_dump($query,$result);
+	//	foreach($result as $aResult) {
+		//	var_dump($aResult);	
+	//	}
 		die();
 		
 	}

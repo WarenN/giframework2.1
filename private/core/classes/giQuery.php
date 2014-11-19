@@ -7,14 +7,16 @@ class giQuery {
 	protected	$Cache;
 	protected	$Query;
 	protected	$Values;
+	protected	$Prepared;
+	protected	$Success;
 	protected	$Result;
 	protected	$Array;
 	protected	$Action;
-	
 	// attributes to build a query
+	protected	$Table;
 	protected	$Selects;
 	protected	$Joins;
-	protected	$Operators;
+	protected	$Operator;
 	protected	$Conditions;
 	protected	$Updates;
 	protected	$Inserts;
@@ -23,7 +25,6 @@ class giQuery {
 
 	// instanciate a new query
 	public function __construct($Database,$Cache=null) {
-	
 		// set the link to the database
 		$this->Database 	= &$Database;
 		// set the link to the cache
@@ -32,22 +33,26 @@ class giQuery {
 		$this->Query		= null;
 		// set an array to store all values to pass to the prepared query
 		$this->Values		= array();
+		// set the PDO prepare object
+		$this->Prepared		= null;
+		// set the status of the query
+		$this->Success		= false;
 		// set the result as being empty for no
 		$this->Result		= null;
 		// set the array of results as being empty too
 		$this->Array		= array();
-		// set the main action (INSERT, UPDATE, DELETE, SELECT)
+		// set the main action (INSERT, UPDATE, DELETE, SELECT or QUERY in case of passthru)
 		$this->Action		= null;
 		// initialize attributes
+		$this->Table		= null;
+		$this->Operator		= null;
 		$this->Selects		= array();
 		$this->Joins		= array();
-		$this->Operators	= array();
 		$this->Conditions	= array();
 		$this->Updates		= array();
 		$this->Inserts		= array();
 		$this->Order		= array();
 		$this->Limit		= array();
-		
 	}
 
 	// on garbage collection	
@@ -55,9 +60,24 @@ class giQuery {
 
 	}
 	
-	// passrthu a query with values in needed
+	// passrthu a query with values if needed
 	public function query($query,$values=null) {
-		
+		// if no principal action is set yet
+		if(!$this->Action) {
+			// set the main action
+			$this->Action = 'QUERY';
+		}
+		// an action has already been set, this is impossible
+		else {
+			// those actions being incompatible we throw an exception
+			Throw new Exception("giQuery->select() : An incompatible action already exists : {$this->Action}");
+		}
+		// set the query
+		$this->Query = $query;
+		// set the array of values
+		$this->Values = $values;
+		// return self to the next method
+		return($this);
 	}
 	
 	// first main method
@@ -69,9 +89,29 @@ class giQuery {
 		}
 		// an action has already been set, this is impossible
 		else {
-			// those action being incompatible we throw an exception
-			Throw new Exception('giQuery->select() : An incompatible action already exists : '.$this->Action);
+			// those actions being incompatible we throw an exception
+			Throw new Exception("giQuery->select() : An incompatible action already exists : {$this->Action}");
 		}
+		// if the argument passed is an array of columns
+		if(is_array($array)) {
+			// for each column
+			foreach($array as $function_or_index => $column) {
+				// if the key is numeric
+				if(is_numeric($function_or_index)) {
+					// just select the column
+					//$this->Selects[] = "{$this->Database->quote($column)}";
+					$this->Selects[] = $column;
+				}
+				// the key is a SQL function
+				else {
+					// format the name of the alias
+					$alias = $this->Database->quote("{$function_or_index}_{$column}");
+					// select the column using a function
+					$this->Selects[] = "{$function_or_index}({$column}) AS $alias";
+				}	
+			}	
+		}
+		
 		// return self to the next method
 		return($this);
 	}
@@ -85,8 +125,8 @@ class giQuery {
 		}
 		// an action has already been set, this is impossible
 		else {
-			// those action being incompatible we throw an exception
-			Throw new Exception('giQuery->select() : An incompatible action already exists : '.$this->Action);
+			// those actions being incompatible we throw an exception
+			Throw new Exception("giQuery->update() : An incompatible action already exists : {$this->Action}");
 		}
 		// return self to the next method
 		return($this);
@@ -101,8 +141,8 @@ class giQuery {
 		}
 		// an action has already been set, this is impossible
 		else {
-			// those action being incompatible we throw an exception
-			Throw new Exception('giQuery->select() : An incompatible action already exists : '.$this->Action);
+			// those actions being incompatible we throw an exception
+			Throw new Exception("giQuery->insert() : An incompatible action already exists : {$this->Action}");
 		}
 		// return self to the next method
 		return($this);
@@ -117,8 +157,8 @@ class giQuery {
 		}
 		// an action has already been set, this is impossible
 		else {
-			// those action being incompatible we throw an exception
-			Throw new Exception('giQuery->select() : An incompatible action already exists : '.$this->Action);
+			// those actions being incompatible we throw an exception
+			Throw new Exception("giQuery->delete() : An incompatible action already exists : {$this->Action}");
 		}
 		// return self to the next method
 		return($this);
@@ -126,7 +166,11 @@ class giQuery {
 	
 	// select the table
 	public function from($table) {
-		
+		// if the table is in string format
+		if(is_string($table)) {
+			// set the table
+			$this->Table = $this->Database->quote($table);	
+		}
 		// return self to the next method
 		return($this);
 	}
@@ -140,7 +184,24 @@ class giQuery {
 	
 	// add a condition
 	public function where($conditions) {
-		
+		// if provided conditions are an array
+		if(is_array($conditions)) {
+			// for each provided strict condition
+			foreach($conditions as $column => $value) {
+				// if the column name not numeric
+				if(!is_numeric($column)) {
+					// if the operator is missing
+					if(!$this->Operator) {
+						// force AND operator
+						$this->Operator = 'AND';	
+					}
+					// save the condition
+					$this->Conditions[] = "{$this->Operator} ( {$this->Database->quote($column)} = :{$column} )";
+					// save the value
+					$this->Values[] = array(":{$column}"=>$value);
+				}
+			}	
+		}
 		// return self to the next method
 		return($this);
 	}
@@ -153,21 +214,17 @@ class giQuery {
 	}
 	
 	public function addAnd() {
-		
-		// push an AND operator in the list
-		$this->Operators[] = 'AND';
+		// set the AND
+		$this->Operator = 'AND';
 		// return self to the next method
 		return($this);
-		
 	}
 	
 	public function addOr() {
-		
-		// push an OR operator in the list
-		$this->Operators[] = 'OR';		
+		// set the OR
+		$this->Operator = 'OR';		
 		// return self to the next method
 		return($this);
-		
 	}
 	
 	// shortcuts
@@ -246,6 +303,7 @@ class giQuery {
 				// if the direction is not valid
 				if($direction != 'ASC' and $direction != 'DESC') {
 					// skip it as a wrong parameter has been provided	
+					continue;
 				}
 				// push it
 				$this->Order[] = "{$this->Database->quote($column)} $direction";
@@ -279,6 +337,106 @@ class giQuery {
 	// execute the query
 	public function execute() {
 		
+		// check in the cache
+		// ------------
+		
+		// if the action is missing
+		if(!$this->Action) {
+			// thow an exception
+			Throw new Exception('giQuery->execute() : Missing action');	
+		}
+		
+		// if action anything but query
+		if($this->Action != 'QUERY') {
+			// set the first keyword
+			$this->Query = $this->Action;
+		}
+		
+		// if action is select
+		if($this->Action == 'SELECT') {
+			// if the table is missing
+			if(!$this->Table) {
+				// throw an exception
+				Throw new Exception('giQuery->execute() : Missing FROM');	
+			}
+			
+			// if columns are set for selection
+			if(count($this->Selects)) {
+				// assemble all the columns
+				$this->Query .= ' ' . implode(', ',$this->Selects).' ';
+			}
+			// no specific column set for selection
+			else {
+				// select everything
+				$this->Query .= ' * ';
+			}
+			
+		}
+		// build the joins
+		// ------------
+		
+		// if the action has a from table
+		if($this->Action == 'SELECT' or $this->Action == 'DELETE') {
+			// add source table
+			$this->Query .= "FROM $this->Table";
+		}
+		
+		// if the action needs conditions
+		if($this->Action == 'SELECT' or $this->Action == 'UPDATE' or $this->Action == 'DELETE') {
+			// if conditions are provided
+			if(count($this->Conditions)) {
+				// assemble the conditions
+				$this->Query .= ' WHERE ' . trim(implode(' ',$this->Conditions),'AND /OR ');
+			}
+		}
+		
+		
+		
+		// if ordering options are set
+		if(count($this->Order) and $this->Action == 'SELECT') {
+			// assemble orders
+			$this->Order = implode(', ',$this->Order);
+			// add ordering to the query
+			$this->Query .= " ORDER BY $this->Order";
+		}
+		// if limit options are set
+		if(count($this->Limit) and $this->Action == 'SELECT') {
+			// assemble the limit options to the query
+			$this->Query .= " LIMIT {$this->Limit[0]},{$this->Limit[1]}";
+		}
+		// prepare the statement
+		$this->Prepared = $this->Database->prepare($this->Query);
+		// if prepare failed
+		if(!$this->Prepared) {
+			// prepare informations to be thrown
+			$exception_infos = implode(":",$this->Database->ErrorInfo()).":$this->Query";
+			// throw an exception
+			Throw new Exception('giQuery->execute() : Failed to prepare query ['.$exception_infos.']');
+		}
+		// execute the statement
+		$this->Success = $this->Prepared->execute($this->Values);
+		// if execution failed
+		if($this->Success === false) {
+			// prepare informations to be thrown
+			$exception_infos = implode(":",$this->Database->ErrorInfo()).":$this->Query";
+			// throw an exception
+			Throw new Exception('giQuery->execute() : Failed to execute query ['.$exception_infos.']');
+		}
+
+		// fetch all results
+		$this->Result = $this->Prepared->fetchAll(
+			// fetch as an object
+			PDO::FETCH_CLASS,
+			// of this specific class
+			'giRecord',
+			// and pass it some arguments
+			array($this->Table,$this->Database)
+		);
+
+		
+		// place in cache
+		// --------------
+		
 		// return the results
 		return($this->Result);
 	}
@@ -297,6 +455,107 @@ class giQuery {
 		return($this->Result);
 	}
 
+	// set the table last modification so all older objects will be disregarded
+	public function updateOutdated($aTable) {
+		// if caching is enabled
+		if($this->Cache['enabled']) {
+			// try to update
+			$oudatedUpdate = $this->Cache['handle']->replace($this->Cache['prefix'].'_lu_'.$aTable,time());	
+			// if the update failed
+			if(!$outdatedUpdate) {
+				// set the last modification date fot this table
+				$this->Cache['handle']->set($this->Cache['prefix'].'_lu_'.$aTable,time());
+			}	
+		}	
+	}
+	
+	// check if an sql query is in cache
+	private function isInCache($queryElements,$aTable,$lagTolerance) {
+		// the cache is enabled
+		if($this->Cache['enabled']) {
+			// generate a hash for this specific query
+			$aQueryHash = $this->generateQueryHash($queryElements);
+			// get the last cached query
+			$lastCachedQuery = $this->Cache['handle']->get($this->Cache['prefix'].'_qt_'.$aQueryHash);
+			// if there is no cached query
+			if(!$lastCachedQuery) {
+				// nothing to return
+				return(null);	
+			}
+			// if there is no table specified we have no idea what's going on
+			if(!$aTable) {
+				// nothing to return from the cache
+				return(null);	
+			}
+			// check the last table update
+			$lastTableUpdate = $this->Cache['handle']->get($this->Cache['prefix'].'_lu_'.$aTable);
+			// if there is no lag tolerance
+			if(!$lagTolerance or $lagTolerance == 0) {
+				// if we don't know the last update date of the able
+				if(!$lastTableUpdate) {
+					// set the last modification date for the next time
+					$this->Cache['handle']->set($this->Cache['prefix'].'_lu_'.$aTable,time());
+					// returned the last cached query
+					return($this->Cache['handle']->get($this->Cache['prefix'].'_qd_'.$aQueryHash));
+				}
+				// if the cached query is posterior to the last table update
+				if($lastCachedQuery > $lastTableUpdate) {
+					// get the cached data and return it
+					return($this->Cache['handle']->get($this->Cache['prefix'].'_qd_'.$aQueryHash));	
+				}
+				// the last cached query is anterior to the last table update
+				else {
+					// nothing coherent to return
+					return(null);
+				}
+			}
+			// else there is a lag tolerance
+			else {
+				// if the last cached query is fresh enough
+				if($lastCachedQuery + $lagTolerance > time()) {
+					// get the cached data and return it
+					return($this->Cache['handle']->get($this->Cache['prefix'].'_qd_'.$aQueryHash));
+				}
+				// else the last cached query is too old
+				else {
+					// nothing to return
+					return(null);	
+				}
+			}
+		}
+		// cache is disabled
+		else {
+			// nothing to return
+			return(null);
+		}
+	}
+	
+	// put an SQL query result in cache
+	private function putInCache($queryElements,$queryResult) {
+		// if the cache is enabled
+		if($this->Cache['enabled']) {
+			// generate the query hash
+			$aQueryHash = $this->generateQueryHash($queryElements);
+			// if the query was a passthru query we have an object and not an array
+			if(is_object($queryResult) and get_class($queryResult) == 'PDOStatement') {
+				// declare the actual results array
+				$queryResultArray = array();
+				// we must iterate
+				foreach($queryResult as $aResult) {
+					// push the result in the array
+					$queryResultArray[] = $aResult;
+				}
+				// replace the object by the array
+				$queryResult = $queryResultArray;
+			}
+			// put the query result in cache
+			$this->Cache['handle']->set($this->Cache['prefix'].'_qd_'.$aQueryHash,$queryResult);
+			// set the query time
+			$this->Cache['handle']->set($this->Cache['prefix'].'_qt_'.$aQueryHash,time());
+			// return the query result
+			return($queryResult);
+		}
+	}
 
 }
 

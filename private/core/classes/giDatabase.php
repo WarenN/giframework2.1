@@ -85,7 +85,7 @@ class giDatabase {
 			break;
 		}
 		// if memcache is enabled
-		if($this->Cache['enabled']) {
+		if($this->Cache['enabled'] and !$this->Cache['handle']) {
 			// instanciate a memcache client
 			$this->Cache['handle'] = new Memcache();
 			// configure the memcache client
@@ -937,6 +937,7 @@ class giDatabase {
 		
 	}
 	
+	// set the table last modification so all older objects will be disregarded
 	public function updateOutdated($aTable) {
 		// if caching is enabled
 		if($this->Cache['enabled']) {
