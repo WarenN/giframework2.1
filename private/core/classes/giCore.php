@@ -138,9 +138,7 @@ class giCore {
 				if(substr($aPlugin['name'],0,1) != '.') {
 					// set the plugin runtime variable
 					$aPlugin['runtime']				= array();
-					// set the plugin assets path
-					$aPlugin['assets']				= '../private/plugins/' . $aPlugin['name'] . '/assets/';
-					// set the plugin assets path
+					// set the plugin locales path
 					$aPlugin['locales']				= '../private/plugins/' . $aPlugin['name'] . '/locales/';
 					// set the plugin classes path
 					$aPlugin['classes']				= '../private/plugins/' . $aPlugin['name'] . '/classes/';

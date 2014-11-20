@@ -836,22 +836,33 @@ class giResponse {
 	}
 	
 	public function setJs($pageJs) {
+		// if provided javascript is an array
 		if(is_array($pageJs) and count($pageJs) > 0) {
+			// for each javascript file
 			foreach($pageJs as $aJsFile) {
+				// if the file has an absolute path or is a remote file
 				if(substr($aJsFile,0,1) == '/' or substr($aJsFile,0,4) == 'http') {
-					$this->Javascripts[] = (string) $aJsFile;
+					// put it raw
+					$this->Javascripts[] = $aJsFile;
 				}
+				// the file is relative
 				else {
-					$this->Javascripts[] = (string) '/js/'.$aJsFile;	
+					// push it
+					$this->Javascripts[] = "/assets/js/$aJsFile";	
 				}
 			}	
-		}	
+		}
+		// only one file was provieded
 		else {
+			// if its absolute or remote
 			if(substr($pageJs,0,1) == '/' or substr($pageJs,0,4) == 'http') {
-				$this->Javascripts[] = (string) $aJsFile;
+				// put it raw
+				$this->Javascripts[] = $aJsFile;
 			}
+			// path is relative
 			else {
-				$this->Javascripts[] = (string) '/js/'.$pageJs;	
+				// push it
+				$this->Javascripts[] = "/assets/js/$pageJs";	
 			}	
 		}
 	}
@@ -860,22 +871,33 @@ class giResponse {
 	}
 	
 	public function setCss($pageCss) {
+		// if provided stylesheets is an array
 		if(is_array($pageCss) and count($pageCss) > 0) {
+			// for each file
 			foreach($pageCss as $aCssFile) {
+				// if the file is absolute or remote
 				if(substr($aCssFile,0,1) == '/' or substr($aCssFile,0,4) == 'http') {
-					$this->Stylesheets[] = (string) $aCssFile;	
+					// put it raw
+					$this->Stylesheets[] = $aCssFile;	
 				}
+				// file is relative
 				else {
-					$this->Stylesheets[] = (string) '/css/'.$aCssFile;	
+					// push it
+					$this->Stylesheets[] = "/assets/css/$aCssFile";	
 				}
 			}	
 		}
+		// only one file was provided
 		else {
+			// if the file is absolute or remote
 			if(substr($pageCss,0,1) == '/' or substr($pageCss,0,4) == 'http') {
-				$this->Stylesheets[] = (string) $pageCss;	
+				// put it raw
+				$this->Stylesheets[] = $pageCss;	
 			}
+			// path is relative
 			else {
-				$this->Stylesheets[] = (string) '/css/'.$pageCss;	
+				// push it
+				$this->Stylesheets[] = (string) "/assets/css/$pageCss";	
 			}
 		}
 	}

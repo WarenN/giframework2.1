@@ -97,7 +97,7 @@ class giDatabase {
 		}
 		// if cache is enabled
 		if($this->Cache['enabled']) {
-			// connect the cache	
+			// connect the cache
 			$this->Cache['handle'] = new Memcache();
 			// configure the memcache client
 			$connected = $this->Cache['handle']->connect($this->Cache['hostname'],$this->Cache['port']);
@@ -109,7 +109,7 @@ class giDatabase {
 		}
 
 		// return a new query object
-		return(new giQuery($this->Database['handle'],$this->Cache));
+		return(new giQuery($this->Database,$this->Cache));
 		
 	}
 	

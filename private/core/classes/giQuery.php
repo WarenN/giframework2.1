@@ -67,7 +67,7 @@ class giQuery {
 	}
 	
 	// passrthu a query with values if needed
-	public function query($query,$values=null) {
+	public function query($query,$values=null,$table=null) {
 		// if no principal action is set yet
 		if(!$this->Action) {
 			// set the main action
@@ -78,6 +78,12 @@ class giQuery {
 			// those actions being incompatible we throw an exception
 			Throw new Exception("giQuery->select() : An incompatible action already exists : {$this->Action}");
 		}
+		// if action can alter a table (INSERT, UPDATE, DELETE)
+		// ---------------------------
+		// detect the table being altered
+		// ------------------------------
+		// set the table
+		$this->Table = $table;
 		// set the query
 		$this->Query = $query;
 		// set the array of values
@@ -105,13 +111,12 @@ class giQuery {
 				// if the key is numeric
 				if(is_numeric($function_or_index)) {
 					// just select the column
-					//$this->Selects[] = "{$this->Database->quote($column)}";
 					$this->Selects[] = $column;
 				}
 				// the key is a SQL function
 				else {
 					// format the name of the alias
-					$alias = $this->Database->quote("{$function_or_index}_{$column}");
+					$alias = $this->Database['handle']->quote("{$function_or_index}_{$column}");
 					// select the column using a function
 					$this->Selects[] = "{$function_or_index}({$column}) AS $alias";
 				}	
@@ -122,8 +127,32 @@ class giQuery {
 		return($this);
 	}
 	
+	// alias of update
+	public function set($columns_and_values) {
+		// if provided conditions are an array
+		if(is_array($columns_and_values)) {
+			// for each provided strict condition
+			foreach($columns_and_values as $column => $value) {
+				// if the column name not numeric
+				if(!is_numeric($column)) {
+					// save the condition
+					$this->Updates[] = "{$column} = :{$column}";
+					// save the value
+					$this->Values[":{$column}"] = $value;
+				}
+				// column name in a number
+				else {
+					// throw an exception
+					Throw new Exception('giQuery->update() : Column name cannot be a number');
+				}
+			}
+		}
+		// return self to the next method
+		return($this);
+	}
+	
 	// second main method
-	public function update($columns_and_values) {
+	public function update($table) {
 		// if no principal action is set yet
 		if(!$this->Action) {
 			// set the main action
@@ -133,6 +162,11 @@ class giQuery {
 		else {
 			// those actions being incompatible we throw an exception
 			Throw new Exception("giQuery->update() : An incompatible action already exists : {$this->Action}");
+		}
+		// if the table is a string and is not empty
+		if(is_string($table) and !empty($table)) {
+			// set the destination table
+			$this->Table = $table;			
 		}
 		// return self to the next method
 		return($this);
@@ -188,7 +222,7 @@ class giQuery {
 		// if the table is in string format
 		if(is_string($table)) {
 			// set the table
-			$this->Table = $this->Database->quote($table);	
+			$this->Table = $this->Database['handle']->quote($table);	
 		}
 		// return self to the next method
 		return($this);
@@ -203,30 +237,6 @@ class giQuery {
 				// do something
 				// ------------	
 			}
-		}
-		// return self to the next method
-		return($this);
-	}
-	
-	// add a condition
-	public function where($conditions) {
-		// if provided conditions are an array
-		if(is_array($conditions)) {
-			// for each provided strict condition
-			foreach($conditions as $column => $value) {
-				// if the column name not numeric
-				if(!is_numeric($column)) {
-					// if the operator is missing
-					if(!$this->Operator) {
-						// force AND operator
-						$this->Operator = 'AND';	
-					}
-					// save the condition
-					$this->Conditions[] = "{$this->Operator} ( {$column} = :{$column} )";
-					// save the value
-					$this->Values[":{$column}"] = $value;
-				}
-			}	
 		}
 		// return self to the next method
 		return($this);
@@ -253,6 +263,35 @@ class giQuery {
 	public function addOr() {
 		// set the OR
 		$this->Operator = 'OR';		
+		// return self to the next method
+		return($this);
+	}
+	
+	// add a condition
+	public function where($conditions) {
+		// if provided conditions are an array
+		if(is_array($conditions)) {
+			// for each provided strict condition
+			foreach($conditions as $column => $value) {
+				// if the column name not numeric
+				if(!is_numeric($column)) {
+					// if the operator is missing
+					if(!$this->Operator) {
+						// force AND operator
+						$this->Operator = 'AND';
+					}
+					// save the condition
+					$this->Conditions[] = "{$this->Operator} ( {$column} = :{$column} )";
+					// save the value
+					$this->Values[":{$column}"] = $value;
+				}
+				// column name in a number
+				else {
+					// throw an exception
+					Throw new Exception('giQuery->where() : Column name cannot be a number');
+				}
+			}
+		}
 		// return self to the next method
 		return($this);
 	}
@@ -336,7 +375,7 @@ class giQuery {
 					continue;
 				}
 				// push it
-				$this->Order[] = "{$this->Database->quote($column)} $direction";
+				$this->Order[] = "{$this->Database['handle']->quote($column)} $direction";
 			}
 		}
 		// return self to the next method
@@ -366,9 +405,6 @@ class giQuery {
 
 	// execute the query
 	public function execute() {
-		
-		// check in the cache
-		// ------------
 		
 		// if the action is missing
 		if(!$this->Action) {
@@ -427,12 +463,32 @@ class giQuery {
 			// add source table
 			$this->Query .= "FROM $this->Table";
 		}
+		// if action is an update
+		if($this->Action == 'UPDATE') {
+			// if the table is missing
+			if(!$this->Table) {
+				// throw an exception
+				Throw new Exception('giQuery->execute() : No table to update');	
+			}
+			// if there is nothing to update
+			if(!count($this->Updates)) {
+				// throw an exception
+				Throw new Exception('giQuery->execute() : No columns to update');	
+			}
+			// assemble the updates
+			$this->Updates = implode(', ',$this->Updates);
+			// prepare the update query
+			$this->Query = "UPDATE $this->Table SET $this->Updates";
+		}
+		
 		// if the action needs conditions
 		if($this->Action == 'SELECT' or $this->Action == 'UPDATE' or $this->Action == 'DELETE') {
 			// if conditions are provided
 			if(count($this->Conditions)) {
 				// assemble the conditions
-				$this->Query .= ' WHERE ' . trim(implode(' ',$this->Conditions),'AND /OR ');
+				$this->Conditions = trim(implode(' ',$this->Conditions),'AND /OR ');
+				// assemble the query
+				$this->Query .= " WHERE $this->Conditions";
 			}
 		}
 		// if ordering options are set
@@ -458,22 +514,22 @@ class giQuery {
 			}
 		}
 		// prepare the statement
-		$this->Prepared = $this->Database->prepare($this->Query);
+		$this->Prepared = $this->Database['handle']->prepare($this->Query);
 		// if prepare failed
 		if(!$this->Prepared) {
 			// prepare informations to be thrown
-			$exception_infos = implode(":",$this->Database->ErrorInfo()).":$this->Query";
+			$exception_infos = implode(":",$this->Database['handle']->ErrorInfo()).":$this->Query";
 			// throw an exception
-			Throw new Exception('giQuery->execute() : Failed to prepare query ['.$exception_infos.']');
+			Throw new Exception("giQuery->execute() : Failed to prepare query [{$exception_infos}]");
 		}
 		// execute the statement
 		$this->Success = $this->Prepared->execute($this->Values);
 		// if execution failed
 		if($this->Success === false) {
 			// prepare informations to be thrown
-			$exception_infos = implode(":",$this->Database->ErrorInfo()).":$this->Query";
+			$exception_infos = implode(":",$this->Database['handle']->ErrorInfo()).":$this->Query";
 			// throw an exception
-			Throw new Exception('giQuery->execute() : Failed to execute query ['.$exception_infos.']');
+			Throw new Exception("giQuery->execute() : Failed to execute query [{$exception_infos}]");
 		}
 		// fetch all results
 		$this->Result = $this->Prepared->fetchAll(
@@ -482,7 +538,7 @@ class giQuery {
 			// of this specific class
 			'giRecord',
 			// and pass it some arguments
-			array($this->Table,$this->Database)
+			array($this->Table,$this->Database['handle'])
 		);
 		
 		// if action was a pathtru and starts with UPDATE, INSERT or DELETE and Table was set and it succeeded
@@ -503,12 +559,12 @@ class giQuery {
 		// if the query was an insert and it succeeded
 		if($this->Action == 'INSERT' and $this->Success) {
 			// instanciate a new query
-			$this->Result = new giQuery($this->Database,$this->Cache);
+			$this->Result = new giQuery($this->Database['handle'],$this->Cache);
 			// get the newly inserted element from its id
 			return($this->Result
 				->select()
 				->from($this->Table)
-				->where(array('id'=>$this->Database->lastInsertId()))
+				->where(array('id'=>$this->Database['handle']->lastInsertId()))
 				->execute()
 			);
 		}

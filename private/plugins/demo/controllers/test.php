@@ -84,6 +84,20 @@ class TestController extends giController {
 		
 	}
 	
+	public function updateQueryAction() {
+	
+		$query = $this->Core->Database->query();
+		$result = $query
+		->update('accounts')
+		->set(array('last_login_date'=>'18/03/1995','last_login_origin'=>'45.106.223.90'))
+		->where(array('is_enabled'=>'0'))
+		->execute();
+		
+		var_dump($query,$result);
+		die();
+		
+	}
+	
 	public function testQueryAction() {
 	
 		$query = $this->Core->Database->query();
