@@ -24,7 +24,7 @@ class giRecord {
 	public function __sleep() {
 	
 		// remove the database connexion
-		$this->_['database'] = null;
+		$this->_['database']['handle'] = null;
 		
 		// return self
 		return($this);
@@ -90,8 +90,6 @@ class giRecord {
 		return($this->{$column});
 	}
 	
-	/*********************************************************************************/
-	
 	public function set($column,$value) {
 		if(strpos($column,'_array') !== false) {
 			$this->{$column}	= (string)	json_encode($value);
@@ -101,25 +99,17 @@ class giRecord {
 		}
 	}
 
-	/*********************************************************************************/
-	
 	public function getInteger($column) {
 		return(intval($this->get($column)));
 	}
 
-	/*********************************************************************************/
-	
 	public function getFloat($column) {
 		return(floatval($this->get($column)));
 	}
 
-	/*********************************************************************************/
-
 	public function getSlug($column,$appendExtension=false) {
 		return(giFramework::giSlugify($this->get($column),$appendExtension));
 	}
-	
-	/*********************************************************************************/
 	
 	public function getInput($column,$options=null,$autocomplete=null) {
 		return(
@@ -132,8 +122,6 @@ class giRecord {
 		);
 	}
 	
-	/*********************************************************************************/
-	
 	public function getTextarea($column,$options=null) {
 		return(
 			giTextarea(
@@ -143,8 +131,6 @@ class giRecord {
 			)
 		);	
 	}
-	
-	/*********************************************************************************/
 	
 	public function getSelect($column,$list,$options=null) {
 		return(
@@ -157,8 +143,6 @@ class giRecord {
 		);	
 	}
 	
-	/*********************************************************************************/
-	
 	public function getSelectFor($column,$list,$key,$options=null) {
 		$value = $this->get($column);
 		return(
@@ -170,9 +154,7 @@ class giRecord {
 			)
 		);	
 	}
-	
-	/*********************************************************************************/
-	
+		
 	public function getSelectMultiple($column,$list,$options=null) {
 		$options['multiple'] = 'multiple';
 		$value = $this->get($column);
@@ -185,8 +167,6 @@ class giRecord {
 			)
 		);
 	}
-	
-	/*********************************************************************************/
 	
 	public function getCheckbox($column,$key,$options=null) {
 		if($key != '') {
@@ -211,24 +191,14 @@ class giRecord {
 		}
 	}
 	
-	
-	/*********************************************************************************/
-	
 	public function save() {
-		/********* THIS IS NOT SEXY BUT DOES THE TRICK *********/
-		global $giDatabase;
-		$result = $giDatabase->update($this->Table,$this->asArray(true),array('id'=>$this->id));
-		return($result);
+
 	}
 	
 	public function delete() {
-		/********* THIS IS NOT SEXY BUT DOES THE TRICK *********/
-		global $giDatabase;
-		$result = $giDatabase->delete($this->Table,array('id'=>$this->id));
-		return($result);
+
 	}
 	
-	/*********************************************************************************/
 
 }
 ?>

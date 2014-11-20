@@ -79,9 +79,10 @@ class giQuery {
 			Throw new Exception("giQuery->select() : An incompatible action already exists : {$this->Action}");
 		}
 		// if action can alter a table (INSERT, UPDATE, DELETE)
-		// ---------------------------
-		// detect the table being altered
-		// ------------------------------
+		if(in_array(substr($query,0,6),array('INSERT','UPDATE','DELETE'))) {
+			// detect the table being altered
+			// ------------------------------
+		}
 		// set the table
 		$this->Table = $table;
 		// set the query
@@ -405,7 +406,6 @@ class giQuery {
 
 	// execute the query
 	public function execute() {
-		
 		// if the action is missing
 		if(!$this->Action) {
 			// thow an exception
@@ -538,9 +538,8 @@ class giQuery {
 			// of this specific class
 			'giRecord',
 			// and pass it some arguments
-			array($this->Table,$this->Database['handle'])
+			array($this->Table,$this->Database)
 		);
-		
 		// if action was a pathtru and starts with UPDATE, INSERT or DELETE and Table was set and it succeeded
 		if($this->Action == 'QUERY' AND in_array(substr($this->Query,0,6),array('INSERT','UPDATE','DELETE')) AND $this->Table AND $this->Success) {
 			// we must notify the cache that this table has changed to prevent giving outdated cached data later on
@@ -556,10 +555,15 @@ class giQuery {
 			// place result in cache
 			$this->putInCache();
 		}
+		// if action was UPDATE or DELETE or one of those via QUERY
+		if(in_array($this->Action,array('UPDATE','DELETE')) or ($this->Action == 'QUERY' AND in_array(substr($this->Query,0,6),array('UPDATE','DELETE')) AND $this->Table)) {
+			// return the number of affected rows
+			return($this->Prepared->rowCount());
+		}
 		// if the query was an insert and it succeeded
 		if($this->Action == 'INSERT' and $this->Success) {
 			// instanciate a new query
-			$this->Result = new giQuery($this->Database['handle'],$this->Cache);
+			$this->Result = new giQuery($this->Database,$this->Cache);
 			// get the newly inserted element from its id
 			return($this->Result
 				->select()

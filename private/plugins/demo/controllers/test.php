@@ -67,7 +67,7 @@ class TestController extends giController {
 	}
 	
 	public function insertQueryAction() {
-	
+		
 		$result = $this->Core->Database->query()
 		->insert(array(
 			'login'=>substr(md5(rand(0,99999)),0,4),
