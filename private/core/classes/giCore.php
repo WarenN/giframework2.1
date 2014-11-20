@@ -49,7 +49,7 @@ class giCore {
 			$this->Configuration['database']['username'],
 			$this->Configuration['database']['password'],
 			$this->Configuration['database']['hostname'],
-			$this->Configuration['memcache']['enabled'],
+			$this->Configuration['memcache']['enable'],
 			$this->Configuration['memcache']['prefix'],
 			$this->Configuration['memcache']['hostname'],
 			$this->Configuration['memcache']['port']

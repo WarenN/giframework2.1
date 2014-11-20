@@ -12,6 +12,8 @@ class giQuery {
 	protected	$Result;
 	protected	$Array;
 	protected	$Action;
+	protected	$Hash;
+	protected	$Lag;
 	// attributes to build a query
 	protected	$Table;
 	protected	$Selects;
@@ -43,6 +45,10 @@ class giQuery {
 		$this->Array		= array();
 		// set the main action (INSERT, UPDATE, DELETE, SELECT or QUERY in case of passthru)
 		$this->Action		= null;
+		// set the unique hash of the query for caching purpose
+		$this->Hash			= null;
+		// set the maximum age allowed from the cache (in hour), 6h would use caches 6h old at maximum, 0 uses cache since table was not updated
+		$this->Lag			= null;
 		// initialize attributes
 		$this->Table		= null;
 		$this->Operator		= null;
@@ -421,7 +427,6 @@ class giQuery {
 			// add source table
 			$this->Query .= "FROM $this->Table";
 		}
-		
 		// if the action needs conditions
 		if($this->Action == 'SELECT' or $this->Action == 'UPDATE' or $this->Action == 'DELETE') {
 			// if conditions are provided
@@ -430,9 +435,6 @@ class giQuery {
 				$this->Query .= ' WHERE ' . trim(implode(' ',$this->Conditions),'AND /OR ');
 			}
 		}
-		
-		
-		
 		// if ordering options are set
 		if($this->Action == 'SELECT' and count($this->Order)) {
 			// assemble orders
@@ -444,6 +446,16 @@ class giQuery {
 		if($this->Action == 'SELECT' and count($this->Limit)) {
 			// assemble the limit options to the query
 			$this->Query .= " LIMIT {$this->Limit[0]},{$this->Limit[1]}";
+		}
+		// if cache is enabled and query is a SELECT or a passtrhu starting with SELECT
+		if($this->Cache['enabled'] and ( $this->Action == 'SELECT' or ($this->Action == 'QUERY' and substr($this->Query,0,6) == 'SELECT'))) {
+			// check if it exists in cache
+			$cached = $this->isInCache();
+			// if cache provided actual result
+			if($cached !== null) {
+				// return the cached data
+				return($cached);	
+			}
 		}
 		// prepare the statement
 		$this->Prepared = $this->Database->prepare($this->Query);
@@ -473,17 +485,23 @@ class giQuery {
 			array($this->Table,$this->Database)
 		);
 		
-		// if action is not insert nor delete and succeeded
-		if($this->Action != 'INSERT' and $this->Action != 'DELETE' and $this->Success) {
-			// place in cache
-			// --------------
+		// if action was a pathtru and starts with UPDATE, INSERT or DELETE and Table was set and it succeeded
+		if($this->Action == 'QUERY' AND in_array(substr($this->Query,0,6),array('INSERT','UPDATE','DELETE')) AND $this->Table AND $this->Success) {
+			// we must notify the cache that this table has changed to prevent giving outdated cached data later on
+			$this->updateOutdated();
 		}
-		
+		// if action was DELETE or UPDATE or INSERT and succeeded, it altered a table state
+		if(($this->Action == 'UPDATE' or $this->Action == 'DELETE' or $this->Action == 'INSERT') and $this->Success) {
+			// we must notify the cache of the new modification date for this table
+			$this->updateOutdated();
+		}
+		// if action succeeded and has some kind of useful result (SELECT or SELECT via a QUERY) and has a table set
+		if(($this->Action == 'SELECT' or ($this->Action == 'QUERY' and substr($this->Query,0,6) == 'SELECT')) and $this->Table and $this->Success) {
+			// place result in cache
+			$this->putInCache();
+		}
 		// if the query was an insert and it succeeded
 		if($this->Action == 'INSERT' and $this->Success) {
-			// update the cache
-			// ----------------
-			
 			// instanciate a new query
 			$this->Result = new giQuery($this->Database,$this->Cache);
 			// get the newly inserted element from its id
@@ -498,80 +516,66 @@ class giQuery {
 		return($this->Result);
 	}
 	
-	// get the results
-	public function fetchObjects() {
-		
-		// return the results
-		return($this->Result);
-	}
-	
-	// get the results
-	public function fetchArray() {
-
-		// return the results
-		return($this->Result);
-	}
-
 	// set the table last modification so all older objects will be disregarded
-	public function updateOutdated($aTable) {
+	private function updateOutdated() {
 		// if caching is enabled
 		if($this->Cache['enabled']) {
 			// try to update
-			$oudatedUpdate = $this->Cache['handle']->replace($this->Cache['prefix'].'_lu_'.$aTable,time());	
+			$oudatedUpdate = $this->Cache['handle']->replace($this->Cache['prefix'].'_lu_'.$this->Table,time());	
 			// if the update failed
 			if(!$outdatedUpdate) {
 				// set the last modification date fot this table
-				$this->Cache['handle']->set($this->Cache['prefix'].'_lu_'.$aTable,time());
-			}	
-		}	
+				$this->Cache['handle']->set($this->Cache['prefix'].'_lu_'.$this->Table,time());
+			}
+		}
 	}
 	
 	// check if an sql query is in cache
-	private function isInCache($queryElements,$aTable,$lagTolerance) {
+	private function isInCache() {
 		// the cache is enabled
 		if($this->Cache['enabled']) {
+			// if we don't know on which table we're working
+			if(!$this->Table) {
+				// we cannot use the cache
+				return(null);
+			}
 			// generate a hash for this specific query
-			$aQueryHash = $this->generateQueryHash($queryElements);
-			// get the last cached query
-			$lastCachedQuery = $this->Cache['handle']->get($this->Cache['prefix'].'_qt_'.$aQueryHash);
-			// if there is no cached query
+			$this->generateQueryHash();
+			// get the last date of the last time this query was cached
+			$lastCachedQuery = $this->Cache['handle']->get($this->Cache['prefix'].'_qt_'.$this->Hash);
+			// if this query is totaly absent from the cache
 			if(!$lastCachedQuery) {
 				// nothing to return
-				return(null);	
+				return(null);
 			}
-			// if there is no table specified we have no idea what's going on
-			if(!$aTable) {
-				// nothing to return from the cache
-				return(null);	
-			}
-			// check the last table update
-			$lastTableUpdate = $this->Cache['handle']->get($this->Cache['prefix'].'_lu_'.$aTable);
+			// check the last time the table has changed (insert, update, delete)
+			$lastTableUpdate = $this->Cache['handle']->get($this->Cache['prefix'].'_lu_'.$this->Table);
 			// if there is no lag tolerance
-			if(!$lagTolerance or $lagTolerance == 0) {
-				// if we don't know the last update date of the able
+			if(!$this->Lag) {
+				// if we don't know the last update date of the table
 				if(!$lastTableUpdate) {
-					// set the last modification date for the next time
-					$this->Cache['handle']->set($this->Cache['prefix'].'_lu_'.$aTable,time());
-					// returned the last cached query
-					return($this->Cache['handle']->get($this->Cache['prefix'].'_qd_'.$aQueryHash));
+					// set the last modification date as being now for the next time
+					$this->Cache['handle']->set($this->Cache['prefix'].'_lu_'.$this->Table,time());
+					// returned nothing has we are no sure the cached request is up to date
+					return(null);
 				}
-				// if the cached query is posterior to the last table update
+				// if the cached query is posterior to the last time the table was updated
 				if($lastCachedQuery > $lastTableUpdate) {
 					// get the cached data and return it
-					return($this->Cache['handle']->get($this->Cache['prefix'].'_qd_'.$aQueryHash));	
+					return($this->Cache['handle']->get($this->Cache['prefix'].'_qd_'.$this->Hash));	
 				}
 				// the last cached query is anterior to the last table update
 				else {
-					// nothing coherent to return
+					// nothing coherent to return but do not delete the cached query has some other requests might be more tolerant of lag time
 					return(null);
 				}
 			}
 			// else there is a lag tolerance
 			else {
 				// if the last cached query is fresh enough
-				if($lastCachedQuery + $lagTolerance > time()) {
+				if($lastCachedQuery + $this->Lag > time()) {
 					// get the cached data and return it
-					return($this->Cache['handle']->get($this->Cache['prefix'].'_qd_'.$aQueryHash));
+					return($this->Cache['handle']->get($this->Cache['prefix'].'_qd_'.$this->Hash));
 				}
 				// else the last cached query is too old
 				else {
@@ -588,31 +592,23 @@ class giQuery {
 	}
 	
 	// put an SQL query result in cache
-	private function putInCache($queryElements,$queryResult) {
-		// if the cache is enabled
-		if($this->Cache['enabled']) {
+	private function putInCache() {
+		// if the cache is enabled and table for current query is also set
+		if($this->Cache['enabled'] and $this->Table and $this->Success) {
 			// generate the query hash
-			$aQueryHash = $this->generateQueryHash($queryElements);
-			// if the query was a passthru query we have an object and not an array
-			if(is_object($queryResult) and get_class($queryResult) == 'PDOStatement') {
-				// declare the actual results array
-				$queryResultArray = array();
-				// we must iterate
-				foreach($queryResult as $aResult) {
-					// push the result in the array
-					$queryResultArray[] = $aResult;
-				}
-				// replace the object by the array
-				$queryResult = $queryResultArray;
-			}
+			$this->generateQueryHash();
 			// put the query result in cache
-			$this->Cache['handle']->set($this->Cache['prefix'].'_qd_'.$aQueryHash,$queryResult);
+			$this->Cache['handle']->set($this->Cache['prefix'].'_qd_'.$this->Hash,$this->Result);
 			// set the query time
-			$this->Cache['handle']->set($this->Cache['prefix'].'_qt_'.$aQueryHash,time());
-			// return the query result
-			return($queryResult);
+			$this->Cache['handle']->set($this->Cache['prefix'].'_qt_'.$this->Hash,time());
 		}
 	}
+	
+	private function generateQueryHash() {
+		// create a signature for this request
+		$this->Hash = md5(json_encode(array($this->Query,$this->Values)));
+	}
+	
 	
 	// convert types like dates and arrays
 	private function convert($column,$value) {

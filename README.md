@@ -1,0 +1,1 @@
+giFramework is a PHP micro framework that provides everything you need to code small to medium web applications.

@@ -20,6 +20,22 @@ class giRecord {
 		
 	}
 
+	// when this object is being put to sleep in memcached
+	public function __sleep() {
+	
+		// remove the database connexion
+		$this->_['database'] = null;
+		
+		// return self
+		return($this);
+		
+	}
+	
+	// when ti object is retrieved by memcached
+	public function __wakeup() {
+		
+	}
+
 	public function __toString() {
 		// format a string named according to the object
 		return(ucfirst($this->_['table']).':'.$this->_['id']);	
