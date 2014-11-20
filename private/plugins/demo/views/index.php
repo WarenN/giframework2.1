@@ -1,7 +1,1 @@
-<h1 style="text-align:center;font-family:arial;font-size:36px;padding-top:20px;">
-	giFrame<b>work</b> 2<b style="color:#0069c2;">.1</b>
-</h1>
-<p style="text-align:center;color:#999999;font-family:arial;">
-	It seems to be working !<br />
-	<img src="https://raw.githubusercontent.com/AnnoyingTechnology/giframework2/master/giFramework2.jpg" style="width: 80%;" />
-</p>
+<style type="text/css">.container{padding-top:18px;padding-bottom:8px;width:100%;}.animated_hidder{height:4px;width:300px;margin:auto;overflow:hidden;border-radius:4px;}.animated_bar{height:4px;width:1300px;background:-moz-linear-gradient(left,rgb(237,224,47)0%, rgb(90,216,41)20%,rgb(44,188,232)40%,rgb(218,93,234)60%,rgb(255,71,74)80%,rgb(234,139,79)100%);background:-webkit-linear-gradient(left, rgb(237,224,47)0%,rgb(90,216,41)20%,rgb(44,188,232)40%,rgb(218,93,234)60%,rgb(255,71,74)80%,rgb(234,139,79)100%);-moz-animation:moveme 3 infinite linear;-webkit-animation: moveme 3s infinite linear;}@-moz-keyframes moveme{0%{margin-left:0px;}50%{margin-left:-1000px;}100%{margin-left:0px;}}@-webkit-keyframes moveme{0%{margin-left:0px;}50%{margin-left:-1000px;}100%{margin-left:0px;}}h1{text-align:center;font-family:Helvetica,Arial;font-size:36px;color:#353535;}h1 span{color:#006fa9;}p{text-align:center;color:#999999;font-family:arial;}.head{padding-bottom:20px;}</style><div class="head"><div class="container"><div class="animated_hidder"><div class="animated_bar"></div></div></div><h1>giFrame<b>work <span>2.1</span></b></h1><p>It seems to be working !<br /></p></div>

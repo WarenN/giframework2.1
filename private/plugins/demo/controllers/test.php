@@ -13,7 +13,7 @@ class TestController extends giController {
 	public function defaultAction() {
 		
 		$this->Core->Response->setType('text');
-		$this->Core->Response->setContent('Fuck you.');
+		$this->Core->Response->setContent('This action is not supported');
 		$this->Core->Response->output();
 			
 	}
@@ -65,16 +65,7 @@ class TestController extends giController {
 		
 	}
 	
-	public function testDatabaseAction() {
-	
-			$this->Core->Response->setType('text');
-			
-//			$this->Core->Response->setContent($this->Core->Database->select('Accounts')[0]);
-			$this->Core->Response->setContent($this->Core->Database->select('Accounts')[0]->asArray());
-//			$this->Core->Response->setContent($this->Core->Database->select('Accounts')[0]->asArray(true));
-		
-	}
-	
+	// test INSERT query
 	public function insertQueryAction() {
 		
 		$result = $this->Core->Database->query()
@@ -93,6 +84,7 @@ class TestController extends giController {
 		
 	}
 	
+	// test DELETE query
 	public function deleteQueryAction() {
 		
 		$query = $this->Core->Database->query();
@@ -106,6 +98,7 @@ class TestController extends giController {
 		
 	}
 	
+	// test UPDATE query
 	public function updateQueryAction() {
 	
 		$query = $this->Core->Database->query();
@@ -117,6 +110,25 @@ class TestController extends giController {
 		
 		var_dump($query,$result);
 		die();
+		
+	}
+	
+	// test SELECT query
+	public function selectQueryAction() {
+	
+		$query = $this->Core->Database->query();
+		$result = $query
+		->select()
+		->from('accounts')
+		->where(array('id'=>'2'))
+		->addOr()
+		->where(array('id_level'=>'28'))
+		->execute();
+	//	var_dump($query,$result);
+		var_export($result);
+	//	$update = $result[0]->save();
+	//	var_dump($result[0],$update);
+		$this->Core->Response->setType('text');
 		
 	}
 	
@@ -146,21 +158,15 @@ class TestController extends giController {
 		
 	}
 	
-	public function selectQueryAction() {
+	public function largeQueryAction() {
 	
-		$query = $this->Core->Database->query();
-		$result = $query
+		$result = $this->Core->Database->Query()
 		->select()
 		->from('accounts')
-		->where(array('id'=>'2'))
-		->addOr()
-		->where(array('id_level'=>'28'))
 		->execute();
-	//	var_dump($query,$result);
-		var_dump($result);
-	//	$update = $result[0]->save();
-	//	var_dump($result[0],$update);
-		die();
+		
+		var_export($result);
+		$this->Core->Response->setType('text');
 		
 	}
 	

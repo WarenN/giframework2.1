@@ -107,7 +107,6 @@ class giDatabase {
 				Throw new Exception('giDatabase->connect() : failed to connect to Memcache');	
 			}
 		}
-
 		// return a new query object
 		return(new giQuery($this->Database,$this->Cache));
 		

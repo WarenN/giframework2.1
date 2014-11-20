@@ -85,7 +85,7 @@ class giCore {
 			$this->Includes['cached'] = json_decode(file_get_contents('../private/data/cache/includes/core.json'),true);
 			
 		}
-		
+		/*
 		// if the cache is available
 		if(isset($this->Includes['cached'])) {
 			// include core classes
@@ -108,11 +108,11 @@ class giCore {
 						$this->Includes['includes']['vendor'][] = $anInclude;
 						// actually include it
 						include($anInclude);
-					}		
+					}
 				}
 			}
 		}
-
+		*/
 		// if the cache is available
 		if(isset($this->Includes['cached'])) {
 			// for each file to include
@@ -284,8 +284,12 @@ class giCore {
 				$this->Router->Function = 'defaultAction';
 			}
 		}
+		// execute the preAction
+		$this->Controller->preAction();
 		// execute the routed method indexAction is no :action pr $_POST['action'] provided
 		$this->Controller->{$this->Router->Function}();
+		// execute the postAction
+		$this->Controller->postAction();
 	}
 	
 	// start the execution time
@@ -391,6 +395,11 @@ class giCore {
 		}
 	}
 	
+	// allow to get the current environment
+	public function getEnvironment() {
+		// return current environment
+		return($this->Environment);
+	}
 	
 }
 

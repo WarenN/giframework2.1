@@ -17,18 +17,6 @@ class giRecord {
 		);
 	}
 
-	// when this object is being put to sleep in memcached
-	public function __sleep() {
-		// return self
-		return($this);
-	}
-	
-	// when ti object is retrieved by memcached
-	public function __wakeup() {
-		// return self
-		return($this);
-	}
-
 	public function __toString() {
 		// format a string named according to the object
 		return(ucfirst($this->_['table']).':'.$this->_['id']);	

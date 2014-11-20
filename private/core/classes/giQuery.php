@@ -585,11 +585,11 @@ class giQuery {
 		// if caching is enabled
 		if($this->Cache['enabled']) {
 			// try to update
-			$oudatedUpdate = $this->Cache['handle']->replace($this->Cache['prefix'].'_lu_'.$this->Table,time());	
+			$oudatedUpdate = $this->Cache['handle']->replace($this->Cache['prefix'].'_lu_'.trim($this->Table,"'"),time());	
 			// if the update failed
 			if(!$outdatedUpdate) {
 				// set the last modification date fot this table
-				$this->Cache['handle']->set($this->Cache['prefix'].'_lu_'.$this->Table,time());
+				$this->Cache['handle']->set($this->Cache['prefix'].'_lu_'.trim($this->Table,"'"),time());
 			}
 		}
 	}
@@ -606,27 +606,27 @@ class giQuery {
 			// generate a hash for this specific query
 			$this->generateQueryHash();
 			// get the last date of the last time this query was cached
-			$lastCachedQuery = $this->Cache['handle']->get($this->Cache['prefix'].'_qt_'.$this->Hash);
+			$lastCachedQuery = $this->Cache['handle']->get("{$this->Cache['prefix']}_qt_{$this->Hash}");
 			// if this query is totaly absent from the cache
 			if(!$lastCachedQuery) {
 				// nothing to return
 				return(null);
 			}
 			// check the last time the table has changed (insert, update, delete)
-			$lastTableUpdate = $this->Cache['handle']->get($this->Cache['prefix'].'_lu_'.$this->Table);
+			$lastTableUpdate = $this->Cache['handle']->get("{$this->Cache['prefix']}_lu_".trim($this->Table,"'"));
+			// if we have no idea when the table last changed
+			if(!$lastTableUpdate) {
+				// assume the worst, that it just changed now
+				$lastTableUpdate = time();
+				// set the last modification date fot this table
+				$this->Cache['handle']->set($this->Cache['prefix'].'_lu_'.trim($this->Table,"'"),$lastTableUpdate);
+			}
 			// if there is no lag tolerance
 			if(!$this->Lag) {
-				// if we don't know the last update date of the table
-				if(!$lastTableUpdate) {
-					// set the last modification date as being now for the next time
-					$this->Cache['handle']->set($this->Cache['prefix'].'_lu_'.$this->Table,time());
-					// returned nothing has we are no sure the cached request is up to date
-					return(null);
-				}
 				// if the cached query is posterior to the last time the table was updated
 				if($lastCachedQuery > $lastTableUpdate) {
 					// get the cached data and return it
-					return($this->Cache['handle']->get($this->Cache['prefix'].'_qd_'.$this->Hash));	
+					return($this->Cache['handle']->get("{$this->Cache['prefix']}_qd_{$this->Hash}"));	
 				}
 				// the last cached query is anterior to the last table update
 				else {
@@ -639,7 +639,7 @@ class giQuery {
 				// if the last cached query is fresh enough
 				if($lastCachedQuery + $this->Lag > time()) {
 					// get the cached data and return it
-					return($this->Cache['handle']->get($this->Cache['prefix'].'_qd_'.$this->Hash));
+					return($this->Cache['handle']->get("{$this->Cache['prefix']}_qd_{$this->Hash}"));
 				}
 				// else the last cached query is too old
 				else {
@@ -657,19 +657,23 @@ class giQuery {
 	
 	// put an SQL query result in cache
 	private function putInCache() {
-		// if the cache is enabled and table for current query is also set
-		if($this->Cache['enabled'] and $this->Table and $this->Success) {
+		// if the cache is enabled
+		if($this->Cache['enabled']) {
 			// generate the query hash
 			$this->generateQueryHash();
 			// put the query result in cache
-			$this->Cache['handle']->set($this->Cache['prefix'].'_qd_'.$this->Hash,$this->Result);
-			// set the query time
-			$this->Cache['handle']->set($this->Cache['prefix'].'_qt_'.$this->Hash,time());
+			$success = $this->Cache['handle']->set("{$this->Cache['prefix']}_qd_{$this->Hash}",$this->Result,MEMCACHE_COMPRESSED);
+			// if the query successfuly made it into the cache
+			if($success) {
+				// set the query time
+				$this->Cache['handle']->set("{$this->Cache['prefix']}_qt_{$this->Hash}",time());
+			}
 		}
 	}
 	
+	// create a signature for this request
 	private function generateQueryHash() {
-		// create a signature for this request
+		// hash based on query and associated values
 		$this->Hash = md5(json_encode(array($this->Query,$this->Values)));
 	}
 	
@@ -715,7 +719,7 @@ class giQuery {
 				// create a timestamp
 				$value = mktime(0,0,1,$month,$day,$year);
 			}
-		}	
+		}
 		// return the value
 		return($value);
 	}
