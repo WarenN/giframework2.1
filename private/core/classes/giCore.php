@@ -8,6 +8,7 @@ class giCore {
 	protected $Includes;
 	protected $Runtimes;
 	protected $Controller;
+	protected $Version;
 	
 	public $Logger;
 	public $Response;
@@ -20,6 +21,7 @@ class giCore {
 	// main constructor from where everything starts
 	public function __construct() {
 		
+		$this->Version = '2.1.0-alpha';
 		$this->Configuration = array();
 		$this->Include = array();
 		
