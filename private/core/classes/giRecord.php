@@ -5,32 +5,28 @@ class giRecord {
 	
 	// stores internal information of the object
 	private		$_;
-	
+
 	// instanciate a child
-	public function __construct($Table) {
+	public function __construct($table) {
 		// set internals
 		$this->_ = array(
 			// id of the record
 			'id'		=>$this->id,
 			// source table of the object
-			'table'		=>$Table,
+			'table'		=>$table,
 		);
 	}
 
 	// when this object is being put to sleep in memcached
 	public function __sleep() {
-	
 		// return self
 		return($this);
-		
 	}
 	
 	// when ti object is retrieved by memcached
 	public function __wakeup() {
-		
 		// return self
 		return($this);
-		
 	}
 
 	public function __toString() {
@@ -60,69 +56,92 @@ class giRecord {
 		// return the converted object
 		return($convertedToArray);
 	}
-
+	
+	// get the content of a column
 	public function get($column) {
+		// if the column contains an array
 		if(strpos($column,'_array') !== false) {
-			return(unserialize($this->{$column}));
+			// decode the array
+			return(json_decode($this->{$column}));
 		}
-		/*
-		elseif(strpos($column,'size') !== false) {
-			return(giHumanSize($this->{$column}));
+		// if the column contains a serialized file
+		elseif(strpos($column,'_file') !== false) {
+			// get the file informations
+			// -------------------------
 		}
-		*/
+		// if the column contains a size value
+		elseif(strpos($column,'_size') !== false) {
+			// convert to human size
+			return(giHelper::humanSize($this->{$column}));
+		}
+		// if the column contains a date
 		elseif(strpos($column,'_date') !== false) {
-			if($this->{$column}) {
+			// if the value is set
+			if(!empty($this->{$column})) {
+				// create the date using raw unix epoch
 				return(date('d/m/y',$this->{$column}));
 			}
+			// value is empty
 			else {
+				// return an empty string
 				return('');	
 			}
 		}
+		// column is normal
 		else {
-			return((string)	stripslashes($this->{$column}));
+			// return the raw contents
+			return($this->{$column});
 		}
 	}
 	
+	// get the raw content of an attribute
 	public function getRaw($column) {
+		// return as is
 		return($this->{$column});
 	}
 	
+	// set an attribute
 	public function set($column,$value) {
-		if(strpos($column,'_array') !== false) {
-			$this->{$column}	= (string)	json_encode($value);
-		}
-		else {
-			$this->{$column}	= (string)	$value;
-		}
+		// set the value as is
+		$this->{$column} = $value;
 	}
 
+	// escape html entities
+	public function getScreenSafe($column) {
+		// escape all html entities
+		return(htmlentities($this->get($column)));
+	}
+	
+	// get as an interger
 	public function getInteger($column) {
+		// convert
 		return(intval($this->get($column)));
 	}
 
+	// get a float value
 	public function getFloat($column) {
+		// convert
 		return(floatval($this->get($column)));
 	}
 
-	public function getSlug($column,$appendExtension=false) {
-		return(giFramework::giSlugify($this->get($column),$appendExtension));
+	public function getSlug($column,$extension=false) {
+		return(giHelper::slugify($this->get($column),$extension));
 	}
 	
-	public function getInput($column,$options=null,$autocomplete=null) {
+	public function getInput($column,$options=null) {
 		return(
-			giInput(
-				$this->Table.'['.$column.']',
+			giHelper::input(
+				"{$this->Table}[$column]",
 				$this->get($column),
-				$options,
-				$autocomplete
+				$options
 			)
 		);
 	}
 	
 	public function getTextarea($column,$options=null) {
 		return(
-			giTextarea(
-				$this->Table.'['.$column.']',
+			giHelper::textarea(
+				"{$this->Table}[$column]",
 				$this->get($column),
 				$options
 			)
@@ -131,8 +150,8 @@ class giRecord {
 	
 	public function getSelect($column,$list,$options=null) {
 		return(
-			giSelect(
-				$this->Table.'['.$column.']',
+			giHelper::select(
+				"{$this->Table}[$column]",
 				$list,
 				$this->get($column),
 				$options
@@ -143,8 +162,8 @@ class giRecord {
 	public function getSelectFor($column,$list,$key,$options=null) {
 		$value = $this->get($column);
 		return(
-			giSelect(
-				$this->Table.'['.$column.']['.$key.']',
+			giHelper::selectFor(
+				"{$this->Table}[$column][$key]",
 				$list,
 				$value[$key],
 				$options
@@ -190,7 +209,6 @@ class giRecord {
 	
 	// save self record
 	public function save() {
-		
 		// if id is missing
 		if(!$this->_['id']) {
 			// throw an exception
@@ -207,16 +225,38 @@ class giRecord {
 		$query = $app->Database->query();
 		// build the save query
 		$status = $query
-		->update($this->_['table'])
-		->set($this->asArray())
-		->where(array('id'=>$this->_['id']))
-		->execute();
+			->update($this->_['table'])
+			->set($this->asArray())
+			->where(array('id'=>$this->_['id']))
+			->execute();
 		// return the status
 		return($status);
 	}
 	
+	// delete self record
 	public function delete() {
-
+		// if id is missing
+		if(!$this->_['id']) {
+			// throw an exception
+			Throw new Exception('giRecord->save() : Cannot delete record without its id');
+		}
+		// if the table is missing
+		if(!$this->_['table']) {
+			// throw an exception
+			Throw new Exception('giRecord->save() : Cannot delete record without its table name');
+		}
+		// access the app
+		global $app;
+		// get a new query
+		$query = $app->Database->query();
+		// build the save query
+		$status = $query
+			->delete()
+			->from($this->_['table'])
+			->where(array('id'=>$this->_['id']))
+			->execute();
+		// return the status
+		return($status);
 	}
 	
 

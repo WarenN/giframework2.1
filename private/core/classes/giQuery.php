@@ -123,7 +123,6 @@ class giQuery {
 				}	
 			}	
 		}
-		
 		// return self to the next method
 		return($this);
 	}
@@ -138,8 +137,8 @@ class giQuery {
 				if(!is_numeric($column)) {
 					// save the condition
 					$this->Updates[] = "{$column} = :{$column}";
-					// save the value
-					$this->Values[":{$column}"] = $value;
+					// save the value (converted if necessary)
+					$this->Values[":{$column}"] = $this->convert($column,$value);
 				}
 				// column name in a number
 				else {
@@ -399,11 +398,6 @@ class giQuery {
 		return($this);
 	}
 
-	// method that actually assemble the query
-	private function buildQuery() {
-		
-	}
-
 	// execute the query
 	public function execute() {
 		// if the action is missing
@@ -458,6 +452,16 @@ class giQuery {
 		// build the joins
 		// ------------
 		
+		// if the action is delete
+		if($this->Action == 'DELETE') {
+			// if the table is missing
+			if(!$this->Table) {
+				// throw an exception
+				Throw new Exception('giQuery->execute() : Missing table to delete from');	
+			}
+			// set the query
+			$this->Query = 'DELETE ';
+		}
 		// if the action has a from table
 		if($this->Action == 'SELECT' or $this->Action == 'DELETE') {
 			// add source table
@@ -685,17 +689,17 @@ class giQuery {
 		// if we are dealing with a date
 		elseif(strpos($column,'_date') !== false) {
 			// if the date is formated with two slashs
-			if(substr_count($column,'/') == 2) {
+			if(substr_count($value,'/') == 2) {
 				// set the separator
 				$separator = '/';
 			}
 			// if the date is formated with two dots
-			elseif(substr_count($column,'.') == 2) {
+			elseif(substr_count($value,'.') == 2) {
 				// set the separator
 				$separator = '.';
 			}
 			// if the date is formated with two -
-			elseif(substr_count($column,'-') == 2) {
+			elseif(substr_count($value,'-') == 2) {
 				// set the separator
 				$separator = '-';
 			}

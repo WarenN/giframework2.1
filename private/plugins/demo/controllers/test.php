@@ -42,8 +42,9 @@ class TestController extends giController {
 	// this will NOT respond to /demo/debugRouter/ as the method is private
 	private function debugRouterAction() {
 	
-			$this->Core->Response->freezeFor(24);
-			$this->Core->Response->setType('text');
+		// this will cache the page for 24 hours
+		$this->Core->Response->freezeFor(24);
+		$this->Core->Response->setType('text');
 		$this->Core->Response->setContent(var_export($this->Core->Router));
 
 	}
@@ -89,6 +90,19 @@ class TestController extends giController {
 		->execute();
 		
 		var_dump($result);
+		
+	}
+	
+	public function deleteQueryAction() {
+		
+		$query = $this->Core->Database->query();
+		$result = $query
+		->delete()
+		->from('accounts')
+		->where(array('id'=>rand(1,100)))
+		->execute();
+		var_dump($result,$query);
+		die();
 		
 	}
 	
@@ -139,11 +153,13 @@ class TestController extends giController {
 		->select()
 		->from('accounts')
 		->where(array('id'=>'2'))
+		->addOr()
+		->where(array('id_level'=>'28'))
 		->execute();
-		//var_dump($query,$result);
-
-		$update = $result[0]->save();
-		var_dump($result[0],$update);
+	//	var_dump($query,$result);
+		var_dump($result);
+	//	$update = $result[0]->save();
+	//	var_dump($result[0],$update);
 		die();
 		
 	}

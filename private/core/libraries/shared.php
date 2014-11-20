@@ -1,130 +1,142 @@
 <?php
-/*
-// provides a string meeting some requierments
-function giFormatString($aString,$someOptions=null) {
-	$aString			= (string)	$aString;
-	if(isset($someOptions['truncate'])) {
-		$truncateLength	= (integer)	intval($someOptions['truncate']);
-		if(strlen($aString) > $truncateLength) {
-			$aString = trim(mb_substr(strip_tags($aString),0,$truncateLength-2,'UTF-8')).'...';
+
+class giHelper {
+	
+	// truncate a string
+	public static function truncateString($string,$length) {
+		// if string is longer than authorized
+		if(strlen($string) > $length) {
+			// truncate
+			return(trim(mb_substr(strip_tags($string),0,$length-2,'UTF-8')).'…');
+		}
+		// string is ok
+		else {
+			// return as is
+			return($string);
 		}
 	}
-	if(isset($someOptions['case'])) {
-		switch($someOptions['case']) {
-			case 'first':
-				$aString = strtolower($aString);
-				$aString = ucfirst($aString);
-			break;
-			case 'allfirst':
-				$aString = strtolower($aString);
-				$aString = ucwords($aString);
-			break;
-			case 'lower':
-				$aString = strtolower($aString);
-			break;
-			case 'upper':
-				$aString = strtoupper($aString);
-			break;
-			default;	
+	
+	// convert bytes to human size
+	public static function humanSize($bytes,$precision=1) {  
+	    $kilobyte = 1000;
+	    $megabyte = $kilobyte * 1000;
+	    $gigabyte = $megabyte * 1000;
+	    $terabyte = $gigabyte * 1000;
+	    if (($bytes >= 0) && ($bytes < $kilobyte)) {
+	        return $bytes . ' B';
+	    } elseif (($bytes >= $kilobyte) && ($bytes < $megabyte)) {
+	        return round($bytes / $kilobyte, $precision) . ' Ko';
+	    } elseif (($bytes >= $megabyte) && ($bytes < $gigabyte)) {
+	        return round($bytes / $megabyte, $precision) . ' Mo';
+	    } elseif (($bytes >= $gigabyte) && ($bytes < $terabyte)) {
+	        return round($bytes / $gigabyte, $precision) . ' Go';
+	    } elseif ($bytes >= $terabyte) {
+	        return round($bytes / $terabyte, $precision) . ' To';
+	    } else {
+	        return $bytes . ' B';
+	    }
+	}
+	
+	public static function relativeDate($time) {
+		// get current time
+		$now = time();
+		// get difference
+		$elapsed = $now - $time;
+		// if more than a week ago
+		if($elapsed > 3600 * 24 * 7) {
+			return('Le '.date('d/m/y',$time));
+		}
+		// if more than two days ago
+		elseif($elapsed > 3600 * 24 * 2) {
+			return('Il y\'a '.round($elapsed/(3600*24)).' jours');
+		}
+		// if more than 24 hours
+		elseif($elapsed > 3600 * 24) {
+			return('Hier');
+		}
+		// if less than a day
+		elseif($elapsed > 3600) {
+			return('Il y\'a '.round($elapsed/(3600)).' heures');
+		}
+		// if less than an hour
+		elseif($elapsed > 60) {
+			return('Il y\'a '.round($elapsed/(60)).' minutes');
+		}
+		// if less than a minute
+		elseif($elapsed > 5) {
+			return('Il y\'a '.round($elapsed).' secondes');
+		}
+		// if less than five seconds
+		else {
+			return('À l\'instant');
+		}
+		
+	}
+
+
+	// slugify method
+	public static function slugify($string,$preserve=false) {
+		// if we want to preserve extension
+		if($preserve) {
+			// do something
+			// ------------	
+		}
+		// list of allowed caracters
+		$allowed	= '#[^a-z0-9\-]#';
+		// separator
+		$separator	= '-';
+		// equivalents of accentuated caracters
+		$accents_list = explode(".","à.á.â.ã.ä.ç.è.é.ê.ë.ì.í.î.ï.ñ.ò.ó.ô.õ.ö.ù.ú.û.ü.ý.ÿ.À.Á.Â.Ã.Ä.Ç.È.É.Ê.Ë.Ì.Í.Î.Ï.Ñ.Ò.Ó.Ô.Õ.Ö.Ù.Ú.Û.Ü.Ý. ._.'");
+		$accents_free = explode(".","a.a.a.a.a.c.e.e.e.e.i.i.i.i.n.o.o.o.o.o.u.u.u.u.y.y.A.A.A.A.A.C.E.E.E.E.I.I.I.I.N.O.O.O.O.O.U.U.U.U.Y.-.-.-");
+		// remove accents
+		$slug = str_replace($accents_list, $accents_free, $string);
+		// lowercase the string
+		$slug = strtolower($slug);
+		// replace all but 0-9 a-z
+		$slug = preg_replace($allowed,$separator,$slug);
+		// remove doubles
+		$slug = str_replace($separator.$separator,$separator,$slug);
+		// trim the edges
+		$slug = trim($slug,$separator);
+		// if string is empty
+		if(strlen($slug) < 1) {
+			// return null string
+			$slug = 'null'; 
+		}
+		// if string is too long
+		if(strlen($slug) > 244) {
+			// shorten it
+			$slug = substr($slug,0,244);
+		}
+		// return the slugified string
+		return($slug);
+	}
+	
+	// build html options/tags
+	public static function buildHtmlOption($options) {
+		if(is_array($options)) {
+			$string	= '';
+			foreach($options as $key => $value) {
+				$string	.= $key.'="'.strip_tags($value).'" ';
+			}
+			$string		= " $string";
+			return($string);
+		}
+		else {
+			return('');
 		}
 	}
-	if(isset($someOptions['escape'])) {
-		$aString = strip_tags($aString);
-	}
-	return($aString);
-}
-
-// convert bytes to human size
-function giHumanSize($bytes, $precision = 1) {  
-    $kilobyte = 1000;
-    $megabyte = $kilobyte * 1000;
-    $gigabyte = $megabyte * 1000;
-    $terabyte = $gigabyte * 1000;
-    if (($bytes >= 0) && ($bytes < $kilobyte)) {
-        return $bytes . ' B';
-    } elseif (($bytes >= $kilobyte) && ($bytes < $megabyte)) {
-        return round($bytes / $kilobyte, $precision) . ' Ko';
-    } elseif (($bytes >= $megabyte) && ($bytes < $gigabyte)) {
-        return round($bytes / $megabyte, $precision) . ' Mo';
-    } elseif (($bytes >= $gigabyte) && ($bytes < $terabyte)) {
-        return round($bytes / $gigabyte, $precision) . ' Go';
-    } elseif ($bytes >= $terabyte) {
-        return round($bytes / $terabyte, $precision) . ' To';
-    } else {
-        return $bytes . ' B';
-    }
-}
-
-// get the date relative to now
-function getRelativeDate($previousTime) {
 	
-	$currentTime = time();
+	public static function input($name,$value=null,$options=null) {
+		
+		$options			= giHelper::buildHtmlOptions($options);
+		$input				= (string)	'<input name="'.$name.'" type="text" value="'.strip_tags($value).'"'.$options.'/>';
+		return($input.$append);
+	}
 	
-	$elapsedTime = $currentTime - $previousTime;
-	
-	if($elapsedTime > 3600 * 24 * 7) {
-		return('Le '.date('d/m/y',$previousTime));
-	}
-	elseif($elapsedTime > 3600 * 24 * 2) {
-	
-		return('Il y\'a '.round($elapsedTime/(3600*24)).' jours');
-	
-	}
-	elseif($elapsedTime > 3600 * 24) {
-		return('Hier');
-	}
-	elseif($elapsedTime > 3600) {
-		return('Il y\'a '.round($elapsedTime/(3600)).' heures');
-	}
-	elseif($elapsedTime > 60) {
-		return('Il y\'a '.round($elapsedTime/(60)).' minutes');
-	}
-	else {
-		return('Il y\'a '.round($elapsedTime).' secondes');
-	}
-
 }
 
 
-// slugify method
-function giSlugify($aString, $appendExtension = true) {
-	$extensionAppend	= (string)	'.html';
-	$authorizedChars	= (string)	'#[^a-z0-9\-]#';
-	$separatorSymbol	= (string)	'-';
-	$accentsList		= (array)	explode			(".","à.á.â.ã.ä.ç.è.é.ê.ë.ì.í.î.ï.ñ.ò.ó.ô.õ.ö.ù.ú.û.ü.ý.ÿ.À.Á.Â.Ã.Ä.Ç.È.É.Ê.Ë.Ì.Í.Î.Ï.Ñ.Ò.Ó.Ô.Õ.Ö.Ù.Ú.Û.Ü.Ý. ._.'");
-	$accentsFree		= (array)	explode			(".","a.a.a.a.a.c.e.e.e.e.i.i.i.i.n.o.o.o.o.o.u.u.u.u.y.y.A.A.A.A.A.C.E.E.E.E.I.I.I.I.N.O.O.O.O.O.U.U.U.U.Y.-.-.-");
-	$aSlugifiedString	= (string)	str_replace		($accentsList, $accentsFree, $aString);
-	$aSlugifiedString	= (string)	strtolower		($aSlugifiedString);
-	$aSlugifiedString	= (string)	preg_replace	($authorizedChars, $separatorSymbol, $aSlugifiedString);
-	$aSlugifiedString	= (string)	str_replace		($separatorSymbol.$separatorSymbol,$separatorSymbol,$aSlugifiedString);
-	$aSlugifiedString	= (string)	trim			($aSlugifiedString, $separatorSymbol);
-	
-	if(strlen($aSlugifiedString) < 1) {
-		$aSlugifiedString	= (string)	'null'; 	
-	}
-	if(strlen($aSlugifiedString) > 244) {
-		$aSlugifiedString	= (string)	substr($aSlugifiedString,0,244);
-	}
-	if($appendExtension) {
-		$aSlugifiedString	.=	$extensionAppend;
-	}
-	return($aSlugifiedString);
-}
-*/
-
-function giBuildHtmlOptions($optionsArray=null) {
-	if($optionsArray) {
-		$optionsString		= (string)	'';
-		foreach($optionsArray as $optionKey => $optionValue) {
-			$optionsString	.= $optionKey.'="'.strip_tags($optionValue).'" ';
-		}
-		$optionsString		= ' '.$optionsString;
-		return($optionsString);
-	}
-	else {
-		return('');
-	}
-}
 
 function giInput($name,$value=null,$options=null,$autocomplete=null) {
 	// autocompletion support
