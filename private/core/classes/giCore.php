@@ -82,14 +82,14 @@ class giCore {
 		if($this->Environment == 'prod' and file_exists('../private/data/cache/includes/core.json')) {
 			
 			// grab the cached list of includes
-			$giIncludes['cached'] = json_decode(file_get_contents('../private/data/cache/includes/core.json'),true);
+			$this->Includes['cached'] = json_decode(file_get_contents('../private/data/cache/includes/core.json'),true);
 			
 		}
 		
 		// if the cache is available
-		if(isset($giIncludes['cached'])) {
+		if(isset($this->Includes['cached'])) {
 			// include core classes
-			foreach($giIncludes['cached']['includes']['vendor'] as $anInclude) {
+			foreach($this->Includes['cached']['includes']['vendor'] as $anInclude) {
 				// include the class
 				include($anInclude);	
 			}
@@ -105,7 +105,7 @@ class giCore {
 						// define the include
 						$anInclude = '../private/vendor/'.$aVendorFolder.'/'.$aVendorFolder.'.php';
 						// push the include
-						$giIncludes['includes']['vendor'][] = $anInclude;
+						$this->Includes['includes']['vendor'][] = $anInclude;
 						// actually include it
 						include($anInclude);
 					}		
@@ -114,20 +114,16 @@ class giCore {
 		}
 
 		// if the cache is available
-		if(isset($giIncludes['cached'])) {
+		if(isset($this->Includes['cached'])) {
 			// for each file to include
-			foreach($giIncludes['cached']['includes']['plugins'] as $anInclude) {
+			foreach($this->Includes['cached']['includes']['plugins'] as $anInclude) {
 				// include the class
 				include($anInclude);	
 			}
 			// for each configuration file to include
-			foreach($giIncludes['cached']['includes']['plugins_configurations'] as $aPluginConfiguration) {
+			foreach($this->Includes['cached']['includes']['plugins_configurations'] as $aPluginConfiguration) {
 				// include the configuration file
 				include($aPluginConfiguration['path']);	
-				// set the plugins runtime environnement
-				$this->Runtime[$aPluginConfiguration['name']] = $aPlugin['runtime'];
-				// remove the runtime
-				unset($aPlugin);
 			}
 		}
 		// no cache file is available for includes
@@ -157,7 +153,7 @@ class giCore {
 								// set the include
 								$aPlugin['an_include'] = $aPlugin['classes'].$aPlugin['potential_class'] ;
 								// push the include
-								$giIncludes['includes']['plugins'][] = $aPlugin['an_include'];
+								$this->Includes['includes']['plugins'][] = $aPlugin['an_include'];
 								// include the actual class
 								include($aPlugin['an_include']);
 							}
@@ -172,7 +168,7 @@ class giCore {
 								// set the include
 								$aPlugin['an_include'] = $aPlugin['libraries'].$aPlugin['potential_library'] ;
 								// push the include
-								$giIncludes['includes']['plugins'][] = $aPlugin['an_include'];
+								$this->Includes['includes']['plugins'][] = $aPlugin['an_include'];
 								// include the actual library
 								include($aPlugin['an_include']);
 							}
@@ -187,7 +183,7 @@ class giCore {
 								// set the include
 								$aPlugin['a_locale'] = $aPlugin['locales'].$aPlugin['potential_locale'] ;
 								// push the include
-								$giIncludes['includes']['locales'][] = $aPlugin['a_locale'];
+								$this->Includes['includes']['locales'][] = $aPlugin['a_locale'];
 								// include the actual library
 								$this->Localization->setLocales($aPlugin['a_locale']);
 							}
@@ -196,7 +192,7 @@ class giCore {
 					// try to include the configuration file
 					if(file_exists($aPlugin['config'])) {
 						// push the include
-						$giIncludes['includes']['plugins_configurations'][] = array(
+						$this->Includes['includes']['plugins_configurations'][] = array(
 							'name'	=>$aPlugin['name'],
 							'path'	=>$aPlugin['config']
 						);
@@ -208,7 +204,7 @@ class giCore {
 					// try to include the initializator file
 					if(file_exists($aPlugin['routes'])) {
 						// push the include
-						$giIncludes['includes']['plugins'][] = $aPlugin['routes'];
+						$this->Includes['includes']['plugins'][] = $aPlugin['routes'];
 						// include
 						include($aPlugin['routes']);
 					}
@@ -219,10 +215,10 @@ class giCore {
 		}
 
 		// if the includes do not come from the cache
-		if(!isset($giIncludes['cached'])) {
+		if(!isset($this->Includes['cached'])) {
 			
 			// cache the includes
-			file_put_contents('../private/data/cache/includes/core.json',json_encode($giIncludes));
+			file_put_contents('../private/data/cache/includes/core.json',json_encode($this->Includes));
 			
 		}
 
@@ -306,13 +302,29 @@ class giCore {
 		// set the timezone
 		date_default_timezone_set('Europe/Paris');
 		
+		// if using FPM (fix the missing headers bug) or older version of PHP
+		if(!function_exists('getallheaders')) { 
+			// declare the getallheaders
+			function getallheaders() { 
+				// store headers
+				$headers = '';
+				// for each $_server key
+				foreach ($_SERVER as $name => $value) { 
+					// if it's a header
+					if (substr($name, 0, 5) == 'HTTP_') { 
+						// clean it
+						$headers[str_replace(' ','-',ucwords(strtolower(str_replace('_',' ',substr($name, 5)))))] = $value; 
+					} 
+				} 
+				// return found headers
+				return($headers); 
+			} 
+		}
+		
 	}
 	
 	// include dependencies
 	private function initDependencies() {
-	
-		// include the shared library
-		include('../private/core/libraries/shared.php');
 		
 		// include core classes
 		foreach(scandir('../private/core/classes/') as $aClassFile) {
@@ -334,7 +346,6 @@ class giCore {
 	
 		// load the main configuration
 		$this->Configuration += parse_ini_file('../private/core/configuration/common.ini',true);
-		
 		// load the environment specific configuration
 		$this->Configuration += parse_ini_file('../private/core/configuration/'.$this->Environment.'.ini',true);
 		
@@ -349,6 +360,8 @@ class giCore {
 			$this->Configuration['is_cli'] = true;
 			// set the current environment
 			$this->Environment = $_SERVER['argv'][1];
+			// set the last parameter as being the URL
+			$_SERVER['REQUEST_URI'] = $_SERVER['argv'][2];
 		}
 		// not command line
 		else {

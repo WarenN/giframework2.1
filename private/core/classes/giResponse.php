@@ -321,14 +321,8 @@ class giResponse {
 		// if in local mode
 		if($this->Environment == 'local') {
 		
-			// this WILL BE moved away from here
-			function convertSize($size) {
-				$unit=array('b','Kb','Mb','Gb','Tb','Pb');
-				return @round($size/pow(1024,($i=floor(log($size,1024)))),2).' '.$unit[$i];
-			}
-		
 			// provide the memory usage
-			$this->setHeader('X-Memory-Usage',convertSize(memory_get_usage(true)));
+			$this->setHeader('X-Memory-Usage',giHelper::humanSize(memory_get_usage(true)));
 			
 		}
 		

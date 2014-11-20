@@ -12,6 +12,7 @@ class giRouter {
 	protected $Cache;
 	protected $Debug;
 	protected $Cli;
+	protected $Runtime;
 	
 	// specific to the current route
 	public $Plugin;
@@ -41,6 +42,7 @@ class giRouter {
 		$this->Controller		= null;
 		$this->Script			= null;
 		$this->Class			= null;
+		$this->Runtime			= array();
 		$this->Headers			= array();
 		$this->Routes			= array();
 		$this->Parameters		= new stdClass();
@@ -97,8 +99,29 @@ class giRouter {
 		
 	}
 	
-	public function runtime($data,$controller) {
-		
+	// set the runtime data for a specific plugin
+	public function setRuntime($data,$plugin) {
+		// push in the table
+		$this->Runtime[$plugin] = $data;
+	}
+	
+	// get the runtime (all, for a plugin, for an element of a plugin)
+	public function getRuntime($plugin=null,$key=null) {
+		// if no plugin is provided
+		if(!$plugin) {
+			// return everything
+			return($this->Runtime);	
+		}
+		// if no key is provided
+		if(!$key) {
+			// return the whole plugin runtime
+			return($this->Runtime[$plugin]);
+		}
+		// plugin and key are provided
+		else {
+			// return specific array entry
+			return($this->Runtime[$plugin][$key]);
+		}
 	}
 	
 	// dispatch Request to the proper controller
