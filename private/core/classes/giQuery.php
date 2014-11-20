@@ -538,7 +538,7 @@ class giQuery {
 			// of this specific class
 			'giRecord',
 			// and pass it some arguments
-			array($this->Table,$this->Database)
+			array(trim($this->Table,"'"))
 		);
 		// if action was a pathtru and starts with UPDATE, INSERT or DELETE and Table was set and it succeeded
 		if($this->Action == 'QUERY' AND in_array(substr($this->Query,0,6),array('INSERT','UPDATE','DELETE')) AND $this->Table AND $this->Success) {

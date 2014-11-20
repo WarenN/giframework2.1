@@ -6,26 +6,20 @@ class giRecord {
 	// stores internal information of the object
 	private		$_;
 	
-	public function __construct($Table,$Database) {
-		
+	// instanciate a child
+	public function __construct($Table) {
 		// set internals
 		$this->_ = array(
 			// id of the record
 			'id'		=>$this->id,
-			// database handle
-			'database'	=>&$Database,
 			// source table of the object
 			'table'		=>$Table,
 		);
-		
 	}
 
 	// when this object is being put to sleep in memcached
 	public function __sleep() {
 	
-		// remove the database connexion
-		$this->_['database']['handle'] = null;
-		
 		// return self
 		return($this);
 		
@@ -33,6 +27,9 @@ class giRecord {
 	
 	// when ti object is retrieved by memcached
 	public function __wakeup() {
+		
+		// return self
+		return($this);
 		
 	}
 
@@ -191,8 +188,31 @@ class giRecord {
 		}
 	}
 	
+	// save self record
 	public function save() {
-
+		
+		// if id is missing
+		if(!$this->_['id']) {
+			// throw an exception
+			Throw new Exception('giRecord->save() : Cannot save record without its id');
+		}
+		// if the table is missing
+		if(!$this->_['table']) {
+			// throw an exception
+			Throw new Exception('giRecord->save() : Cannot save record without its table name');
+		}
+		// access the app
+		global $app;
+		// get a new query
+		$query = $app->Database->query();
+		// build the save query
+		$status = $query
+		->update($this->_['table'])
+		->set($this->asArray())
+		->where(array('id'=>$this->_['id']))
+		->execute();
+		// return the status
+		return($status);
 	}
 	
 	public function delete() {

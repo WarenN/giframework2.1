@@ -10,6 +10,14 @@ class TestController extends giController {
 		
 	}
 	
+	public function defaultAction() {
+		
+		$this->Core->Response->setType('text');
+		$this->Core->Response->setContent('Fuck you.');
+		$this->Core->Response->output();
+			
+	}
+	
 	// this will respond to /demo/format/
 	public function formatAction() {
 	
@@ -120,6 +128,22 @@ class TestController extends giController {
 	//	foreach($result as $aResult) {
 		//	var_dump($aResult);	
 	//	}
+		die();
+		
+	}
+	
+	public function selectQueryAction() {
+	
+		$query = $this->Core->Database->query();
+		$result = $query
+		->select()
+		->from('accounts')
+		->where(array('id'=>'2'))
+		->execute();
+		//var_dump($query,$result);
+
+		$update = $result[0]->save();
+		var_dump($result[0],$update);
 		die();
 		
 	}

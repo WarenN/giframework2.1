@@ -271,24 +271,25 @@ class giCore {
 	
 	// inclusion happens here
 	private function sandbox() {
-		
 		// include the controller
 		require($this->Router->Script);
-		
 		// instanciate the class associated to the controller
 		$this->Controller = new $this->Router->Class($this);
-		
 		// if method doesn't exist
 		if(!method_exists($this->Controller,$this->Router->Function)) {
-		
-			// throw an exception
-			Throw new Exception('giCore->sandbox() : Method ['.$this->Router->Class.'/'.$this->Router->Function.'] does not exist');
-			
+			// if a default action doesn't exist ether
+			if(!method_exists($this->Controller,'defaultAction')) {
+				// throw an exception
+				Throw new Exception("giCore->sandbox() : Method [{$this->Router->Class}/{$this->Router->Function}] does not exist");
+			}
+			// default action exists
+			else {
+				// set the default action
+				$this->Router->Function = 'defaultAction';
+			}
 		}
-		
 		// execute the routed method indexAction is no :action pr $_POST['action'] provided
 		$this->Controller->{$this->Router->Function}();
-		
 	}
 	
 	// start the execution time
