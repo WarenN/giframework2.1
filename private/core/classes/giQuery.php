@@ -78,17 +78,40 @@ class giQuery {
 			// those actions being incompatible we throw an exception
 			Throw new Exception("giQuery->select() : An incompatible action already exists : {$this->Action}");
 		}
-		// if action can alter a table (INSERT, UPDATE, DELETE)
-		if(in_array(substr($query,0,6),array('INSERT','UPDATE','DELETE'))) {
-			// detect the table being altered
-			// ------------------------------
-		}
 		// set the table
 		$this->Table = $table;
 		// set the query
 		$this->Query = $query;
 		// set the array of values
 		$this->Values = $values;
+		// detetect the action
+		$action = substr($query,0,6);
+		// if action can alter a table (INSERT, UPDATE, DELETE)
+		if(in_array($action,array('INSERT','UPDATE','DELETE','SELECT'))) {
+			// in case of INSERT
+			if($action == 'INSERT') {
+				// explode after INTO
+				list($null,$table) = explode('INTO ',$this->Query);
+				// isolate the table name
+				list($this->Table) = explode(' ',$table);
+			}
+			// in case of UPDATE
+			elseif($action == 'UPDATE') {
+				// explode after UPDATE
+				list($null,$table) = explode('UPDATE ',$this->Query);
+				// isolate the table name
+				list($this->Table) = explode(' ',$table);
+			}
+			// in case of DELETE or SELECT
+			elseif($action == 'DELETE' or $action == 'SELECT') {
+				// explode after FROM 
+				list($null,$table) = explode('FROM ',$this->Query);
+				// isolate the table name
+				list($this->Table) = explode(' ',$table);
+			}
+			// clean the table name from any quotes
+			$this->Table = trim($this->Table,'\'/"`');
+		}
 		// return self to the next method
 		return($this);
 	}
@@ -578,6 +601,12 @@ class giQuery {
 		}
 		// return the results
 		return($this->Result);
+	}
+	
+	// if we want to tolerate some outdated queries to be retrieved from the cache
+	public function addLag($lag) {
+		// set how much outdated we are allowing
+		$this->Lag = $lag*3600;
 	}
 	
 	// set the table last modification so all older objects will be disregarded

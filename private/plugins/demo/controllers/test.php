@@ -170,6 +170,13 @@ class TestController extends giController {
 		
 	}
 	
+	public function passthruQueryAction() {
+	
+	
+		$this->Core->Database->Query()->query('INSERT INTO accounts ( login , id_level ) VALUES ( :login , :id_level ) ',array(':login'=>'testuser',':id_level'=>'7'))->execute();
+		
+	}
+	
 	
 }
 
