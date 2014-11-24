@@ -177,6 +177,21 @@ class TestController extends giController {
 		
 	}
 	
+	// test UPDATE query
+	public function setPasswordAction() {
+	
+		$query = $this->Core->Database->query();
+		$result = $query
+		->update('accounts')
+		->set(array('password'=>$this->Core->Security->getPassword('toor')))
+		->where(array('id'=>'1'))
+		->execute();
+		
+		var_dump($query,$result);
+		die();
+		
+	}
+	
 	
 }
 

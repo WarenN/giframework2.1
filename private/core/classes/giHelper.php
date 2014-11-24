@@ -100,7 +100,7 @@ class giHelper {
 	}
 	
 	// build html options/tags
-	public static function buildHtmlOption($options) {
+	public static function buildHtmlOptions($options) {
 		if(is_array($options)) {
 			$string	= '';
 			foreach($options as $key => $value) {
@@ -195,6 +195,31 @@ class giHelper {
 		}
 		$select .= '</select>';
 		return($select);
+	}
+	
+	// this function generates a password
+	public static function generatePassword($length=6) {
+		// prepare a list of characters
+		$passwordCharacters = 'abcdefghijklmnopqrstuvwxyz?+@&-,:_%=;!/.$[]*{}()#ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789?+@&-,:_%=;!/.$[]*{}()#';
+		// get the length of this list
+		$passwordCharactersLength = strlen($passwordCharacters) - 1;
+		// initialize the password variable
+		$generatedPassword = '';
+		// iterate for each random character
+		for($i=0;$i<$length;$i++) {
+			// genereate one character at a time
+			$generatedPassword .= $passwordCharacters[rand(0,$passwordCharactersLength)];
+		}
+		// if the generated password does not contain chars + capital leters + number we retry
+		if(!preg_match('#((?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{4,255})#',$generatedPassword)) {
+			// if the generated password isn't strong enough generate again
+			return(giHelper::generatePassword($length));
+		}
+		else {
+			// return the generated password
+			return($generatedPassword);
+		}
+		
 	}
 
 

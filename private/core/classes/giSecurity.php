@@ -23,72 +23,12 @@ CREATE TABLE "Accounts" (
 */
 
 class giSecurity {
-
-	/****************************/
-	/* CONFIGURATION PARAMETERS */
-
-
-	protected $configDatabase;			// (object)
-	protected $configTableName;			// (string)
-	protected $configSalt;				// (string)
-	protected $configCurrentTime;		// (integer)
-	protected $configLoginUrl;			// (string)
-	protected $configHomeUrl; 			// (string) is this useful ?
-	protected $configLogoutUrl; 		// (string) is this useful ?
-	protected $configSessionLifetime;	// (integer) in hours
-	protected $configWaitingDelay;		// (integer) in seconds
-	protected $configPasswordLength;	// (integer)
-	protected $configLoginCookie;		// (string)
-	protected $configPasswordCookie;	// (string)
-	protected $configSessionCookie;		// (string)
-	protected $configPostLogin;			// (string)
-	protected $configPostPassword;		// (string)
-	
-	/***********************************/
-	/* AUTHENTIFIED SESSION PARAMETERS */
-	
-	private $authId;					//	(integer)	0 at start, the row id for the authed user
-	private $authAccount;				//	(object)	false at start, return the database record
-	private $authGranted;				//	(boolean)	false at start, true if we are authenticated
-	private $authLogin;					//	(string)	login of the authed user
-	private $authLevel;					//	(integer)	level of the authed user
-	private $authModules;				//	(array)		modules of the authed user
-	private $authExpiration;			//	(integer)	timestamp of the sessions expiration
-
 	
 	// general singleton constructor
 	public function __construct() {
 		
-		// access the main database
-		global $app;
-	
-		// class variables configuration
-		$this->configDatabase			= (object)	$app->Core->Database;
-		$this->configTableName			= (string)	'Accounts';
-		$this->configSalt				= (string)	'cc696n2babBc1307bdcF30d69dEa8ce93c1307bd7ZfIzbKsqmP8ce93c';
-		
-		$this->configLoginCookie		= (string)	'giLogin';
-		$this->configPasswordCookie		= (string)	'giCookie';
-		$this->configSessionCookie		= (string)	'giSession';
-		$this->configPostLogin			= (string)	'login';
-		$this->configPostPassword		= (string)	'password';
-		$this->configCurrentTime		= (integer)	time();
-		$this->configSessionLifetime	= (integer)	72;
-		$this->configWaitingDelay		= (integer)	60;
-		$this->configPasswordLength		= (integer)	6;
-		
-
-		$this->authId			= (integer)	0;
-		$this->authAccount		= (boolean)	false;
-		$this->authLevel		= (integer)	99;
-		$this->authExpiration	= (integer)	0;
-		$this->authGranted		= (boolean)	false;
-		$this->authLogin		= (string)	'not logged in';
-		$this->authModules		= (array)	array();
-		
-		
 		// general configuration
-		$this->Database				= $app->Core->Database;
+		$this->Table				= 'Accounts';
 		$this->Cookie				= 'giSecurity';
 		$this->Salt					= 'Uç!èsdH7èsb:=0)qn&hsbbWK&ç8wsNAKJQsbbQXN198nh%sll-sJ&';
 		$this->Time					= time();
@@ -116,147 +56,147 @@ class giSecurity {
 
 	}
 
+	// set the configuration
 	public function setConfiguration($home_url,$login_url,$logout_url) {
-	
-		$this->configLoginUrl			= $home_url;
-		$this->configHomeUrl			= $login_url;
-		$this->configLogoutUrl			= $logout_url;
-		
-		// configure the class
+		// configure the urls
 		$this->URLs->Login				= $login_url;
 		$this->URLs->Logout				= $logout_url;
 		$this->URLs->Home				= $home_url;
-		
 	}
 
-	/******************/
-	/* PUBLIC METHODS */
-
-	public function enforce($aRequiredLevel=null,$aRequiredModule=null) {
+	// enforce security rules
+	public function enforce($level=null,$module=null) {
 	
 		// if we want to login
-		if(isset($_POST[$this->configPostLogin]) and isset($_POST[$this->configPostPassword])) {
+		if(isset($_POST[$this->LoginField]) and isset($_POST[$this->PasswordField])) {
 			// call the login method
-			$this->tryLogin(
-				$_POST[$this->configPostLogin],
-				$_POST[$this->configPostPassword]
-				);
+			$this->login(
+				$_POST[$this->LoginField],
+				$_POST[$this->PasswordField]
+			);
 			// check if we haven't been logged in
-			if($this->authGranted == false) {
-				// redirect to the login page
-				header('Refresh: 3; url='.$this->configLoginUrl);
-				// remove the password
-				unset($_POST[$this->configPostPassword]);
-				// lockdown
-				$this->lockDown('you_cannot_be_logged_in');
+			if(!$this->Auth->Success) {
+				// access the output handler
+				global $app;
+				// remove the password (to prevent it from being logged)
+				unset($_POST[$this->PasswordField]);
+				// log the error
+				$app->Logger->security('failed_login_attempt');
+				// prepare a redirect
+				$app->Response->redirectAfter($this->URLs->Login,3);
+				// redirect with a 403
+				$app->Response->error403('you_cannot_be_logged_in');
 			}
 			// else we have been logged in
 			else {
-				// access the logger
-				global $giLogger;
-				// remove the password
-				unset($_POST[$this->configPostPassword]);
+				// access the app
+				global $app;
+				// remove the password (to prevent it from being logged)
+				unset($_POST[$this->PasswordField]);
 				// log this
-				$giLogger->info('user_has_logged_in');
+				$app->Logger->info('user_has_logged_in');
 			}	
 		}	
-		// if we want to directly access a page
-		elseif(isset($_COOKIE[$this->configLoginCookie]) and isset($_COOKIE[$this->configPasswordCookie]) and isset($_COOKIE[$this->configSessionCookie])) {
+		// if we want to directly access a page we must have a session cookie set
+		elseif(isset($_COOKIE[$this->Cookie])) {
 			// call the identification method
-			$this->tryIdentify(
-				$_COOKIE[$this->configLoginCookie],
-				$_COOKIE[$this->configPasswordCookie],
-				$_COOKIE[$this->configSessionCookie]
-				);
+			$this->authenticate($_COOKIE[$this->Cookie]);
 			// check if we haven't been logged in
-			if($this->authGranted == false) {
-				// redirect to the login page
-				header('Refresh: 3; url='.$this->configLoginUrl);
+			if(!$this->Auth->Success) {
+				// access the app
+				global $app;
+				// log this
+				$app->Logger->info('session_is_no_longer_valid');
 				// remove cookies
 				$this->killCookies();
-				// lockdown
-				$this->lockDown('your_session_has_expired');
+				// prepare a redirect
+				$app->Response->redirectAfter($this->URLs->Login,3);
+				// redirect with a 403
+				$app->Response->error403('session_is_no_longer_valid');	
 			}
 		}
-			
 		// if we are not logged in and didn't try to log in
 		else {
 			// access the logger
-			global $giLogger;
+			global $app;
 			// log this
-			$giLogger->info('unauthorized');
-			// the access if forbidden
-			header("HTTP/1.0 403 Forbidden");
-			// redirect to the login page
-			die(header('Location: '.$this->configLoginUrl));
-			}
+			$app->Logger->notice('authentication_required');
+			// prepare a redirect
+			$app->Response->redirect($this->URLs->Login);
+			// redirect with a 403
+			$app->Response->error403('authentication_required');
+		}
 		// if a specific level is required
-		if($aRequiredLevel) {
+		if($level) {
 			// check the level
-			if(!$this->checkSelfLevel($aRequiredLevel)) {
+			if(!$this->checkSelfLevel($level)) {
 				// access the logger
-				global $giLogger;
+				global $app;
 				// log this
-				$giLogger->security('level_not_allowed');
-				// lockdown
-				$this->lockDown('level_not_allowed');
+				$app->Logger->security('level_not_authorized');
+				// prepare a redirect
+				$app->Response->redirect($this->URLs->Home);
+				// redirect with a 403
+				$app->Response->error403('level_not_authorized');			
 			}
 		}
 		// if a specific module is required
-		if($aRequiredModule) {
+		if($module) {
 			// check the level
-			if(!$this->checkSelfModule($aRequiredModule)) {
+			if(!$this->checkSelfModule($module)) {
 				// access the logger
-				global $giLogger;
+				global $app;
 				// log this
-				$giLogger->security('module_not_allowed');
-				// lockdown
-				$this->lockDown('module_not_allowed');
+				$app->Logger->security('module_not_authorized');
+				// prepare a redirect
+				$app->Response->redirect($this->URLs->Home);
+				// redirect with a 403
+				$app->Response->error403('module_not_authorized');	
 			}
 		}
 	}
 	
-	public function getSelfAccount() {
-		// return the account
-		return($this->authAccount);	
-	}
-	
-	public function getSelfId() {
+	public function getId() {
 		// return directly
-		return($this->authId);
+		return($this->Auth->Id);
 	}
 	
-	public function getSelfLogin() {
+	public function getLogin() {
 		// return directly
-		return($this->authLogin);
+		return($this->Auth->Login);
 	}
 	
-	public function getSelfLevel() {
+	public function getLevel() {
 		// return directly
-		return($this->authLevel);
+		return($this->Auth->Level);
 	}
 	
-	public function getSelfExpiration() {
+	public function getExpiration() {
 		// return directly
-		return($this->authExpiration);
+		return($this->Auth->Expiration);
 	}
 	
-	public function checkSelfLevel($aRequiredLevel) {
-		// if we are not reaching the required level
-		if($this->authLevel > $aRequiredLevel) {
-			// return false
+	public function checkSelfLevel($level) {
+		// if no level
+		if(!$this->Auth->Level) {
+			// return false	
 			return(false);
 		}
-		// else we reach the level
+		// if we reach the level
+		if($this->Auth->level <= $level) {
+			// return false
+			return(true);
+		}
+		// if we are not reaching the required level
 		else {
 			// return true
-			return(true);	
+			return(false);	
 		}
 	}
 	
-	public function checkSelfModule($aRequiredModule) {
+	public function checkSelfModule($module) {
 		// if we don't have the proper module and are not admin
-		if(!in_array($aRequiredModule,$this->authModules) and $this->authLevel != 1) {
+		if(!in_array($module,$this->authModules) and $this->authLevel != 1) {
 			// return false
 			return(false);
 		}
@@ -267,308 +207,219 @@ class giSecurity {
 		}
 	}
 		
-	public function setUserPassword($aUserId,$aUserPassword){
-		// if a user id is set
-		if($aUserId) {
-			// if a password is set 
-			if(!$aUserPassword) {
-				// generate a random password
-				$aUserPassword = $this->generatePassword();
-			}	
-			// update the user with new password
-			$this->configDatabase->update($this->configTableName,array(
-				'password'	=> $this->getChecksum($aUserPassword)
-			),array(
-				'id'		=>$aUserId
-			));
-			// return the password
-			return($aUserPassword);
-		}
+	public function getPassword($password){
+		// get the hash
+		return($this->getChecksum($password));
 	}
 	
 	public function closeSession() {
 		// try to logout
-		$this->tryLogout();
+		$this->logout();
 		// redirect to the logout page
-		die(header('Location: '.$this->configLogoutUrl));
+		die(header('Location: '.$this->URLs->Logout));
 	}
 
 	
-	/* ALL PUBLIC METHODS OVER */
-	/***************************/
+	/* ALL PUBLIC METHODS ABOVE */
+	/****************************/
 
 
 	// returns a hash of the string with dual salt
-	private function getChecksum($aString) {
+	private function getChecksum($string) {
 		// sha1 hash of string plus salts
-		return(sha1($this->configSalt.$aString.$this->configSalt));
+		return(hash($this->Algorithm,"$this->Salt $string $this->Salt"));
 	}
 	
 	// return a hash of the users signature
 	private function getSignature() {
+		// checksum using remote IP + useragent
 		return($this->getChecksum($_SERVER['REMOTE_ADDR'].$_SERVER['HTTP_USER_AGENT']));
 	}
-	
-	// formats associative arrays
-	private function formatArray($anArray) {
-		
-		// prepare the returned string
-		$aString = '';
-		
-		// if it's an array
-		if(is_array($anArray)) {
-			// for each element of the array
-			foreach($anArray as $aKey => $aValue) {
-				// append to the string
-				$aString .= $aKey.'='.$aValue.';';
-			}
-		}
-		
-		// return the string
-		return($aString);
-			
-	}
-	
-	// kills the application with a shutdown message and logs/report if needed
-	private function lockDown($aShutdownReason,$report=false) {
-
-		// access the output handler
-		global $giOutput;
-		
-		// set the type
-		$giOutput->setType('text');
-		
-		// output the error
-		$giOutput->error403($aShutdownReason);
-	
-	}
-
-	// this function generates a password
-	private function generatePassword() {
-		// get the password length configuration
-		$passwordLength 			= (integer) $this->configPasswordLength;
-		// prepare a list of characters
-		$passwordCharacters 		= (string) 
-			'abcdefghijklmnopqrstuvwxyz?+@&-,:_%=;!/.$[]*{}()#ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789?+@&-,:_%=;!/.$[]*{}()#';
-		// get the length of this list
-		$passwordCharactersLength 	= (integer) strlen($passwordCharacters) - 1;
-		// initialize the password variable
-		$generatedPassword 			= (string) null;
-		// iterate for each random character
-		for($i=0;$i<$passwordLength;$i++) {
-			// genereate one character at a time
-			$generatedPassword .= $passwordCharacters[rand(0,$passwordCharactersLength)];
-		}
-		// if the generated password does not contain chars + capital leters + number we retry
-		if(!preg_match('#((?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{4,255})#',$generatedPassword)) {
-			// if the generated password isn't strong enough generate again
-			return($this->generatePassword());
-		}
-		else {
-			// return the generated password
-			return($generatedPassword);
-		}
-		
-		}
 
 	// this function deletes all cookies
 	private function killCookies() {
-		// we reset all cookies
-		setcookie($this->configLoginCookie,'',time() - 3600,'/');
-		setcookie($this->configPasswordCookie,'',time() - 3600,'/');
-		setcookie($this->configSessionCookie,'',time() - 3600,'/');
+		// we reset the cookies
+		setcookie($this->Cookie,'',time() - 3600,'/');
 	}
 
 	// this function deletes a session
-	private function killSession($aUserId) {
+	private function killSession($id) {
+		// access the app
+		global $app;
 		// reset fields in database
-		$this->configDatabase->update(
-			$this->configTableName,
-			array(
-				'session_key'				=>'',
-				'session_expiration_date'	=>''
-			),
-			array(
-				'id'=>$aUserId
-			)
-		);
+		return($app->Database->query()
+		->update('accounts')
+		->set(array(
+			'session_key'=>'',
+			'session_expiration_date'=>''
+		))
+		->where(array('id'=>$id))
+		->execute());
+		
 	}
 
 	// this function is called when the person wants to log out
-	private function tryLogout() {
+	private function logout() {
 		// try to authenticate first
-		$this->enforceSecurity();
+		$this->enforce();
 		// we delete all cookies
 		$this->killCookies();
 		// we reset the session
-		$this->killSession($this->getSelfId());
+		$this->killSession($this->getId());
 	}
 
 	// this function is called when the person posted a login form
-	private function tryLogin($postedLogin,$postedPassword) {
+	public function login($login,$password) {
+		// access the app
+		global $app;
+		// disable cache
+		$app->Response->disableCache();
 		// make sure the strings are not too long or too short
-		if(strlen($postedLogin) < 1 or strlen($postedPassword) < 1 or strlen($postedLogin) > 255 or strlen($postedPassword) > 255) {
-			// access the logger
-			global $giLogger;
+		if(strlen($login) < 3 or strlen($password) <= 3 or strlen($login) > 255 or strlen($password) > 255) {
 			// log this
-			$giLogger->security('post_inputs_compromised');
+			$app->Logger->security('inputs_out_of_range');
 			// lockdown
-			$this->lockDown('post_inputs_compromised');
+			$app->Response->error400();
 		}
-		// search for this user in the database
-		list($foundAccount) = $this->configDatabase->select($this->configTableName,array('login'=>$postedLogin));
+		// try to fetch the account
+		list($account) = $app->Database->query()
+		->select()
+		->from('accounts')
+		->where(array('login'=>$login))
+		->execute();
 		// if an account is found
-		if($foundAccount) {
+		if($account) {
 			// if the account is disabled
-			if(!$foundAccount->get('is_enabled')) {
-				// access the logger
-				global $giLogger;
+			if(!$account->get('is_enabled')) {
 				// unset password
-				unset($_POST[$this->configPostPassword]);
+				$_POST[$this->PasswordField] = 'undisclosed';
 				// log this
-				$giLogger->security('account_is_disabled');
+				$app->Logger->security('account_is_disabled');
 				// lockdown
-				$this->lockDown('account_is_disabled');
+				$app->Response->error403('account_is_disabled');
 			}
 			// if the account has expired
-			if($foundAccount->get('account_expiration_date') and $this->configCurrentTime > $foundAccount->getRaw('account_expiration_date')) {
-				// access the logger
-				global $giLogger;
+			if($account->get('account_expiration_date') and $this->Time > $account->getRaw('account_expiration_date')) {
 				// unset password
-				unset($_POST[$this->configPostPassword]);
+				$_POST[$this->PasswordField] = 'undisclosed';
 				// log this
-				$giLogger->security('account_has_expired');
+				$app->Logger->security('account_has_expired');
 				// lockdown
-				$this->lockDown('account_has_expired');
+				$app->Response->error403('account_has_expired');
 			}
 			// if the account has been forced by the same person in the last x seconds
-			if($foundAccount->getRaw('last_failure_origin') == $_SERVER['REMOTE_ADDR'] and $foundAccount->getRaw('last_failure_date') and 
-			($foundAccount->getRaw('last_failure_date') + $this->configWaitingDelay > $this->configCurrentTime)) {
-				// access the gioutput
-				global $giLogger,$giOutput;
+			if($account->get('last_failure_origin') == $_SERVER['REMOTE_ADDR'] and $account->getRaw('last_failure_date') and 
+			(($account->getRaw('last_failure_date') + $this->WaitingDelay) > $this->Time)) {
+				// unset password
+				$_POST[$this->PasswordField] = 'undisclosed';
 				// log this
-				$giLogger->security('user_must_wait_before_trying_again');
+				$app->Logger->security('user_must_wait_before_trying_again');
 				// redirect to the login page after a few second
-				$giOutput->redirectAfter($this->configLoginUrl,3);
+				$app->Response->redirectAfter($this->URLs->Login,3);
 				// output a 403 header
-				$giOutput->error403('please_wait_a_moment_before_trying_again');
+				$app->Response->error403('please_wait_a_moment_before_trying_again');
 			}
-
 			// if the password matchs
-			if($foundAccount->get('password') == $this->getChecksum($postedPassword)) {
+			if($account->get('password') == $this->getChecksum($password)) {
 				// generate session expiration date
-				$session_expiration_date= (integer) $this->configCurrentTime + $this->configSessionLifetime * 3600;
+				$session_expiration_date= $this->Time + ($this->SessionLifetime * 3600);
 				// generate session signature
-				$session_key			= (string) $this->getChecksum($this->getSignature().$session_expiration_date);
+				$session_key = $this->getChecksum($this->getSignature().$session_expiration_date.$login);
 				// populate auth information
-				$this->authGranted 		= (boolean)	true;	
-				$this->authAccount		= (object)	$foundAccount;
-				$this->authId			= (integer)	$foundAccount->get('id');
-				$this->authLogin		= (string)	$foundAccount->get('login');
-				$this->authLevel 		= (integer)	$foundAccount->get('id_level');
-				$this->authExpiration	= (integer)	$session_expiration_date;
-				$this->authModules 		= (array)	$foundAccount->get('rights_array');
-				// set cookies
-				setcookie($this->configLoginCookie,$this->getChecksum($foundAccount->get('login')),$session_expiration_date,'/');
-				setcookie($this->configPasswordCookie,$this->getChecksum($foundAccount->get('password')),$session_expiration_date,'/');
-				setcookie($this->configSessionCookie,$session_key,$session_expiration_date,'/');
+				$this->Auth->Success 	=	true;	
+				$this->Auth->Id			= $account->get('id');
+				$this->Auth->Login		= $account->get('login');
+				$this->Auth->Level 		= $account->get('id_level');
+				$this->Auth->Modules 	= $account->get('rights_array');
+				$this->Auth->Exipration	= $session_expiration_date;
+				// set session cookie
+				setcookie($this->Cookie,$session_key,$session_expiration_date,'/');
 				// insert the session signature and session expiration
-				$foundAccount->set('session_key',$session_key);
-				$foundAccount->set('session_expiration_date',$session_expiration_date);
-				$foundAccount->set('last_login_agent',$_SERVER['HTTP_USER_AGENT']);
-				$foundAccount->set('last_login_origin',$_SERVER['REMOTE_ADDR']);
-				$foundAccount->set('last_login_date',$this->configCurrentTime);							
+				$account->set('session_key',$session_key);
+				$account->set('session_expiration_date',$session_expiration_date);
+				$account->set('last_login_agent',$_SERVER['HTTP_USER_AGENT']);
+				$account->set('last_login_origin',$_SERVER['REMOTE_ADDR']);
+				$account->set('last_login_date',$this->Time);							
 				// save the account with its session set in
-				$foundAccount->save();
+				$account->save();
 			}
 			// the password is wrong
 			else {
 				// update the user
-				$foundAccount->set('last_failure_agent',$_SERVER['HTTP_USER_AGENT']);
-				$foundAccount->set('last_failure_origin',$_SERVER['REMOTE_ADDR']);
-				$foundAccount->set('last_failure_date',$this->configCurrentTime);
-				// save the account
-				$foundAccount->save();
-				// access the logger
-				global $giLogger,$giOutput;
+				$account->set('last_failure_agent',$_SERVER['HTTP_USER_AGENT']);
+				$account->set('last_failure_origin',$_SERVER['REMOTE_ADDR']);
+				$account->set('last_failure_date',$this->Time);
+				// save updated user
+				$account->save();
 				// unset password
-				unset($_POST[$this->configPostPassword]);
+				$_POST[$this->PasswordField] = 'undisclosed';
 				// log this
-				$giLogger->security('wrong_password');
+				$app->Logger->security('wrong_password');
 				// redirect to the login page after a few second
-				$giOutput->redirectAfter($this->configLoginUrl,3);
+				$app->Response->redirectAfter($this->URLs->Login,3);
 				// output a 403 header
-				$giOutput->error403('wrong_password');
+				$app->Response->error403('wrong_password');
 			}
 		}
 		// wrong login
 		else {
-			// access the logger
-			global $giLogger,$giOutput;
 			// unset password
-			unset($_POST[$this->configPostPassword]);
+			unset($_POST[$this->PasswordField]);
 			// log this
-			$giLogger->security('wrong_login');
+			$app->Logger->security('wrong_login');
 			// redirect to the login page after a few second
-			$giOutput->redirectAfter($this->configLoginUrl,3);
+			$app->Response->redirectAfter($this->URLs->Login,3);
 			// output a 403 header
-			$giOutput->error403('wrong_password');
-		}	
+			$app->Response->error403('wrong_password');
+		}
 	}
 	
 	// this function is called if the person has auth cookies set so we try to authenticate
-	private function tryIdentify($loginCookie,$passwordCookie,$sessionCookie) {
-		// get the list of all users
-		$accountList = $this->configDatabase->select($this->configTableName,array('session_key'=>$sessionCookie));
-		// iterate trhu the whole list
-		foreach($accountList as $anAccount) {
-			// if the user matchs
-			if($this->getChecksum($anAccount->get('login')) == $loginCookie) {
-				// if the passhash matchs
-				if($this->getChecksum($anAccount->get('password')) == $passwordCookie) {
-					// if the session id matchs
-					if($anAccount->get('session_key') == $sessionCookie) {
-						// if the session has not yet expired
-						if($anAccount->getRaw('session_expiration_date') > $this->configCurrentTime) {
-							// if the account has itself not expired yet or has no expiration date
-							if(!$anAccount->getRaw('account_expiration_date') or $anAccount->getRaw('account_expiration_date') > $this->configCurrentTime) {
-								// if the dynamicaly generated session id still matches
-								if($this->getChecksum($this->getSignature().$anAccount->getRaw('session_expiration_date')) == $sessionCookie) {
-									// we grant access and fill auth infos
-									$this->authGranted 		= (boolean)	true;	
-									$this->authAccount		= (object)	$anAccount;
-									$this->authId			= (integer)	$anAccount->get('id');
-									$this->authLogin		= (string)	$anAccount->get('login');
-									$this->authLevel 		= (integer)	$anAccount->get('id_level');
-									$this->authExpiration	= (integer)	$anAccount->getRaw('session_expiration_date');
-									$this->authModules 		= (array)	$anAccount->get('rights_array');
-									// if the session expires within the next half hour
-									if($anAccount->getRaw('session_expiration_date') < ($this->configCurrentTime + 1800) ) {
-										// extend by 36 hours
-										$anAccount->set('session_expiration_date',$anAccount->getRaw('session_expiration_date') + 36*3600);
-										// update the session string
-										$anAccount->set('session_key',$this->getChecksum($this->getSignature().$anAccount->getRaw('session_expiration_date')));
-										// save the extended session
-										$anAccount->save();
-										// extend the cookie user
-										setcookie($this->configLoginCookie,$loginCookie,$anAccount->getRaw('session_expiration_date'),'/');
-										// extend the cookie pass
-										setcookie($this->configPasswordCookie,$passwordCookie,$anAccount->getRaw('session_expiration_date'),'/');
-										// extend the cookie session
-										setcookie($this->configSessionCookie,$anAccount->get('session_key'),$anAccount->get('session_expiration_date'),'/');
-										}
-									} else { $this->killCookies(); $this->killSession($anAccount->get('id')); }	// the session signature mismatch
-								} else { $this->killCookies(); $this->killSession($anAccount->get('id')); } 	// the account has expired
-							} else { $this->killCookies(); $this->killSession($anAccount->get('id')); } 		// the session has expired
-						} else { $this->killCookies(); $this->killSession($anAccount->get('id')); } 			// the session cookie/dbentry mismatch
-					} else { $this->killCookies(); $this->killSession($anAccount->get('id')); } 				// the password cookie/dbentry mismatch
-				}
-			}
-		}
-
-
-	/* PRIVATE METHODS ARE DECLARED ABOVE
-	********************************** */
+	private function authenticate($session_key) {
+		// access the app
+		global $app;
+		// get potential account
+		list($account) = $app->Database->query()
+		->select('session_key','session_expiration_date','account_expiration_date','id','login','id_level','rights_array')
+		->from('accounts')
+		->where(array('session_key'=>$session_key))
+		->execute();
+		// if an account with this session is is found
+		if($account) {
+			// if the expiration date of the session if in the future
+			if($account->getRaw('session_expiration_date') > $this->Time) {
+				// if the account itself has not expired yet or has no expiration date
+				if(!$account->getRaw('account_expiration_date') or $account->getRaw('account_expiration_date') > $this->Time) {
+					// if the dynamicaly generated session id still matches
+					if($this->getChecksum($this->getSignature().$account->getRaw('session_expiration_date').$account->get('login')) == $session_key) {
+						// we grant access and fill auth infos
+						$this->Auth->Success	= true;	
+						$this->Auth->Expiration	= $account->getRaw('session_expiration_date');
+						$this->Auth->Id			= $account->get('id');
+						$this->Auth->Login		= $account->get('login');
+						$this->Auth->Level		= $account->get('id_level');
+						$this->Auth->Modules	= $account->get('rights_array');
+						// if the session expires within the next 6 hours
+						if($account->getRaw('session_expiration_date') < ($this->Time + 21600) ) {
+							// extend by 36 hours
+							$account->set('session_expiration_date',$account->getRaw('session_expiration_date') + 36*3600);
+							// update the session string
+							$account->set('session_key',$this->getChecksum($this->getSignature().$account->getRaw('session_expiration_date').$account->get('login')));
+							// save the extended session
+							$account->save();
+							// extend the cookie session
+							setcookie($this->Cookie,$account->get('session_key'),$account->getRaw('session_expiration_date'),'/');
+						}
+					// session dynamic key missmatch
+					} else { $this->killSession($account->get('id')); } 
+				// account has expired
+				} else { $this->killSession($account->get('id')); } 
+			// session has expired
+			} else { $this->killSession($account->get('id')); } 
+		// no account found
+		} else {} 
+		
+	}
 	
 }
 ?>

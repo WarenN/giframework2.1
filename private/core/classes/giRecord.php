@@ -22,7 +22,7 @@ class giRecord {
 		return(ucfirst($this->_['table']).':'.$this->_['id']);	
 	}
 
-	public function asArray($raw=null) {
+	public function asArray($raw=false) {
 		// delcare an array to be returned
 		$convertedToArray = array();
 		// for each attribute
@@ -30,7 +30,7 @@ class giRecord {
 			// if we're not iterating over the internal data array
 			if($anAttributeKey != '_') {
 				// if we want a raw object
-				if($raw) {
+				if($raw and strpos($anAttributeKey,'_date') !== false) {
 					// insert the element
 					$convertedToArray[$anAttributeKey] = $this->getRaw($anAttributeKey);
 				}
@@ -78,7 +78,7 @@ class giRecord {
 		// column is normal
 		else {
 			// return the raw contents
-			return($this->{$column});
+			return(stripslashes($this->{$column}));
 		}
 	}
 	
@@ -214,7 +214,7 @@ class giRecord {
 		// build the save query
 		$status = $query
 			->update($this->_['table'])
-			->set($this->asArray())
+			->set($this->asArray(true))
 			->where(array('id'=>$this->_['id']))
 			->execute();
 		// return the status

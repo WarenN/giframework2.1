@@ -225,7 +225,6 @@ class giCore {
 	
 	// initialize PHP parameters
 	private function initPHP() {
-
 		// set the timezone
 		date_default_timezone_set('Europe/Paris');
 		// if using FPM (fix the missing headers bug) or older version of PHP
@@ -244,9 +243,8 @@ class giCore {
 				} 
 				// return found headers
 				return($headers); 
-			} 
+			}
 		}
-		
 	}
 	
 	// include dependencies
@@ -275,9 +273,8 @@ class giCore {
 	
 	// detect environment of execution
 	private function initEnvironment() {
-	
 		// if command line argument are present
-		if(count($_SERVER['argv']) > 0 and $_SERVER['argv'][1] and $_SERVER['argv'][2] and ($_SERVER['argv'][1] == 'local' or $_SERVER['argv'][1] == 'prod')) {
+		if(count($_SERVER['argv']) > 0 and ($_SERVER['argv'][1] == 'local' or $_SERVER['argv'][1] == 'prod') and $_SERVER['argv'][2]) {
 			// set as command line
 			$this->Cli = true;
 			// set the current environment

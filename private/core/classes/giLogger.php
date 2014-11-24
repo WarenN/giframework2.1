@@ -8,6 +8,7 @@ class giLogger {
 	// general singleton constructor
 	public function __construct() {
 		
+		// set the path for the logs
 		$this->logPath = '../private/data/storage/logs/common.log';
 		
 	}
@@ -67,7 +68,7 @@ class giLogger {
 	// format the log message
 	private function formatLogMessage($level,$message) {
 		// access authentiction
-		global $giAuthentication;
+		global $app;
 		// declare the log message
 		$logMessage = '';
 		// first set the date and time
@@ -83,7 +84,7 @@ class giLogger {
 		// script
 		$logMessage .= ' s:['.$_SERVER['SCRIPT_FILENAME'].']';
 		// authed used
-		$logMessage .= ' u:['.$giAuthentication->getSelfLogin().']';
+		$logMessage .= ' u:['.$app->Security->getLogin().']';
 		// error message
 		$logMessage .= ' m:['.$message.']';
 		// general

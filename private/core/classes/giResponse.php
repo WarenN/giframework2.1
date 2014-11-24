@@ -314,9 +314,12 @@ class giResponse {
 			$this->setHeader('Cache-Control','must-revalidate, post-check=0, pre-check=0');
 			
 		}
-			
-		// set content language (DISABLED BECAUSE OF SCOPE ISSUES)
-		//$this->setHeader('Content-Language',$giLocalization->getLanguage());
+		
+		// access the app
+		global $app;
+		
+		// set content language
+		$this->setHeader('Content-Language',$app->Localization->getLanguage());
 		
 		// if in local mode
 		if($this->Environment == 'local') {
@@ -548,6 +551,12 @@ class giResponse {
 		// set the cache as disabled
 		$this->BrowserCache = false;
 	}
+	
+	// disable caching raw pages
+	public function disableCache() {
+		// disable it
+		$this->Caching = false;	
+	}
 		
 	// enable MD5 checksum output in headers
 	public function enableChecksum() {
@@ -564,6 +573,9 @@ class giResponse {
 	// malformed request
 	public function error400($reason='400 Bad Request') {
 		
+		// access the app
+		global $app;
+		
 		// clean previous buffer
 		ob_get_clean();
 		
@@ -577,7 +589,7 @@ class giResponse {
 		header('HTTP/1.0 400 Bad Request', true, 400);
 		
 		// set message
-		$this->setContent(giStringFor($reason));
+		$this->setContent($app->Localization->translate($reason));
 		
 		// output
 		$this->output();
@@ -586,6 +598,9 @@ class giResponse {
 	
 	// refuse access
 	public function error403($reason='403 Forbidden') {
+		
+		// access the app
+		global $app;
 		
 		// clean previous buffer
 		ob_get_clean();
@@ -600,7 +615,7 @@ class giResponse {
 		header('HTTP/1.1 403 Forbidden', true, 403);
 		
 		// set message
-		$this->setContent(giStringFor($reason));
+		$this->setContent($app->Localization->translate($reason));
 		
 		// output
 		$this->output();
@@ -609,6 +624,9 @@ class giResponse {
 	
 	// file not found
 	public function error404($reason='404 Not Found') {
+		
+		// access the app
+		global $app;
 		
 		// clean previous buffer
 		ob_get_clean();
@@ -623,7 +641,7 @@ class giResponse {
 		header('HTTP/1.1 404 Not Found', true, 404);
 		
 		// set message
-		$this->setContent(giStringFor($reason));
+		$this->setContent($app->Localization->translate($reason));
 		
 		// output
 		$this->output();
@@ -632,6 +650,9 @@ class giResponse {
 	
 	// declare internal error
 	public function error500($reason='500 Internal Server Error') {
+		
+		// access the app
+		global $app;
 		
 		// clean previous buffer
 		ob_get_clean();
@@ -646,7 +667,7 @@ class giResponse {
 		header('HTTP/1.1 500 Internal Server Error', true, 500);
 		
 		// set message
-		$this->setContent(giStringFor($reason));
+		$this->setContent($app->Localization->translate($reason));
 		
 		// output
 		$this->output();
@@ -655,6 +676,9 @@ class giResponse {
 	
 	// service unavailable
 	public function error503($reason='503 Service Unavailable') {
+		
+		// access the app
+		global $app;
 		
 		// clean previous buffer
 		ob_get_clean();
@@ -669,7 +693,7 @@ class giResponse {
 		header('HTTP/1.1 503 Service Unavailable', true, 503);
 		
 		// set message
-		$this->setContent(giStringFor($reason));
+		$this->setContent($app->Localization->translate($reason));
 		
 		// output
 		$this->output();

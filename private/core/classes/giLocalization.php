@@ -20,7 +20,7 @@ class giLocalization {
 		$this->availableLanguages	= array('en','fr');
 		$this->availableLocales		= array();
 		$this->defaultLanguage		= 'fr';
-		$this->localizationCache	= '../private/data/cache/locales/localized.json';
+		$this->localizationCache	= '../private/data/cache/locales/translations.json';
 		$this->currentLanguage		= $this->defaultLanguage;
 		$this->isFromCache			= false;
 		
@@ -28,9 +28,9 @@ class giLocalization {
 
 	public function setConfiguration($available_languages,$default_language,$default_locales) {
 	
-		$this->availableLanguages	= (array)	$available_languages;
-		$this->defaultLanguage		= (string)	$default_language;
-		$this->currentLanguage		= (string)	$this->defaultLanguage;
+		$this->availableLanguages	= $available_languages;
+		$this->defaultLanguage		= $default_language;
+		$this->currentLanguage		= $default_language;
 		
 		// if a cache file exists
 		if(file_exists($this->localizationCache)) {
@@ -52,11 +52,17 @@ class giLocalization {
 	public function detectLanguage() {
 	
 		// if a cookie is set
+		if($_COOKIES[self::COOKIE]) {
 			// use it
-			
-		// else we detect the language according to the browser signature
-			// use it
-
+			// $this->setLanguage($_COOKIE['giLanguage']);
+		}
+		// no cookie set
+		else {
+			// detect browser's language
+			// $app->Router->getHeaders()
+			// if no match
+			// use default
+		}
 		
 	}
 	
@@ -68,12 +74,18 @@ class giLocalization {
 	
 	// set the language
 	public function setLanguage($language) {
+		// if language is authorized
 		if(in_array($language,$this->availableLanguages)) {
-			$this->currentLanguage	= (string)	$language;	
+			// set it as current
+			$this->currentLanguage	= $language;	
+			// memorize in a cookie
 			$this->setCookie($language);
 		}
+		// language is not authorized
 		else {
-			$this->currentLanguage	= (string)	$this->defaultLanguage;	
+			// set default as current
+			$this->currentLanguage	= $this->defaultLanguage;
+			// memorize it in a cookie
 			$this->setCookie($language);
 		}
 	}
@@ -84,7 +96,7 @@ class giLocalization {
 	}
 	
 	// return the localized string (if any)
-	public function getLocale($localeKey) {
+	public function translate($localeKey) {
 		// if that locale exists
 		if(key_exists($localeKey,$this->availableLocales[$this->currentLanguage]) and $this->availableLocales[$this->currentLanguage][$localeKey] != '') {
 			// return proper translation
@@ -120,34 +132,41 @@ class giLocalization {
 	// set a locale file
 	public function setLocales($path) {
 		// import the locales from provided file
-		$aLocalizationFile	= (string)	file_get_contents($path);
-		$lineExploded		= (array)	explode("\n",$aLocalizationFile);
-		$localizationIndex	= (array)	explode("\t",$lineExploded[0]);
+		$aLocalizationFile	= file_get_contents($path);
+		// use each line separatly
+		$lineExploded		= explode("\n",$aLocalizationFile);
+		// use the first line as an index of languages codes
+		$localizationIndex	= explode("\t",$lineExploded[0]);
+		// for each language declared in the first line
 		foreach($localizationIndex as $indexNumerical => $indexLanguage) { 
+			// trim and save it
 			$localizationIndex[$indexNumerical] = trim($indexLanguage,'"'); 
 		}
-		$localizationIndex	= (array)	array_flip($localizationIndex);
+		$localizationIndex	= array_flip($localizationIndex);
+		// remove the first indexes line
 		unset($lineExploded[0]);
+		// for each line of translations
 		foreach($lineExploded as $aLocalzedLine) {
-			$tabExploded						= (array)	explode("\t",$aLocalzedLine);
-			$keyword							= (string)	trim($tabExploded[0],'"');
+			// get each available translation
+			$tabExploded = explode("\t",$aLocalzedLine);
+			// get the key for that translation
+			$keyword = trim($tabExploded[0],'"');
+			// for each translated string
 			foreach($this->availableLanguages as $aLanguage) {
-				$index								= (integer)	$localizationIndex[$aLanguage];
-				$locale								= (string)	@trim($tabExploded[@$index],'"');
-				$this->availableLocales[$aLanguage][$keyword]		= (string)	$locale;
+				$index = $localizationIndex[$aLanguage];
+				$locale = @trim($tabExploded[@$index],'"');
+				// save the localized string
+				$this->availableLocales[$aLanguage][$keyword] = $locale;
 			}
 		}
 	}
 	
 	// upon estruction
 	public function __destruct() {
-
 		// if locales don't already come from the cache
 		if(!$this->isFromCache) {
-			
 			// cache the file
 			file_put_contents($this->localizationCache,json_encode($this->availableLocales));	
-			
 		}
 	}
 	
