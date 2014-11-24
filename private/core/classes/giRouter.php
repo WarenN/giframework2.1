@@ -346,7 +346,6 @@ class giRouter {
 
 	// get headers from the browser
 	private function checkHeaders() {
-		
 		// retrieve the headers
 		$availableHeaders = getallheaders();
 		// if they are found
@@ -359,7 +358,6 @@ class giRouter {
 			// set empty array
 			$this->Headers = array();	
 		}
-		
 	}
 
 	// get the unique signature of a request
