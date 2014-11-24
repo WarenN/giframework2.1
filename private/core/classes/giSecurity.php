@@ -269,7 +269,7 @@ class giSecurity {
 	}
 
 	// this function is called when the person posted a login form
-	public function login($login,$password) {
+	private function login($login,$password) {
 		// access the app
 		global $app;
 		// disable cache

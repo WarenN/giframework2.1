@@ -287,7 +287,7 @@ class giRouter {
 					$this->Parameters->$parameter_name = null;
 				}
 			}
-		}		
+		}
 	}
 	
 	private function checkAction() {
@@ -362,7 +362,6 @@ class giRouter {
 
 	// get the unique signature of a request
 	public static function getSignature() {
-	
 		// if no signature is available
 		if(!self::$Signature) {
 			// if post has data

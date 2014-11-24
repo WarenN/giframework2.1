@@ -20,10 +20,10 @@ public function indexAction() {
 a dynamic page ?
 
 ```
-$this->Router->route('/admin/:action/:user/:section/','admin/main')
+$this->Router->route('/admin/:action/:user/:section/','myplugin/mycontroller')
 ```
 
-in /plugins/admin/controllers/main.php
+in /plugins/myplugin/controllers/mycontroller.php
 ```
 public function createAction() {
 	echo "I'm triggered by /admin/create/something/somethingelse/";	
@@ -36,13 +36,29 @@ public function createAction() {
 
 a select query ?
 ```
-$this->Database->Query()->select('name','age','address')->from('users')->where(array('is_enabled'=>'1'))->execute()
+public function defaultAction() {
+
+	$this->Database->Query()
+	->select('name','age','address')
+	->from('users')
+	->where(array('is_enabled'=>'1'))
+	->execute()
+
+}
 ```
 
 
 a more serious query ?
 ```
-$this->Database->Query()->select(array('max'=>'age'))->from('users')->whereNull('driving_license')->execute();
+public function defaultAction() {
+	
+	$this->Database->Query()
+	->select(array('max'=>'age'))
+	->from('users')
+	->whereNull('driving_license')
+	->execute();
+
+}
 ```
 
 
