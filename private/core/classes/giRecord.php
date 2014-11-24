@@ -22,6 +22,7 @@ class giRecord {
 		return(ucfirst($this->_['table']).':'.$this->_['id']);	
 	}
 
+	// convert record to an array
 	public function asArray($raw=false) {
 		// delcare an array to be returned
 		$convertedToArray = array();
