@@ -22,39 +22,7 @@ CREATE TABLE "Accounts" (
 
 */
 
-// declare the interface
-interface iSecurity {
-	
-	// returns the current user id or 0 if not logged in										
-	public function getSelfId();									
-	
-	// return the current login
-	public function getSelfLogin();
-	
-	// return the current user level
-	public function getSelfLevel();
-	
-	// return the expiration time
-	public function getSelfExpiration();
-										
-	// set a user's password
-	public function setUserPassword($aUserId,$aUserPassword);
-
-	// close definitively our session
-	public function closeSession();
-	
-	// main public method for authentication										
-	public function enforceSecurity($aRequiredLevel=null,$aRequiredModule=null);					
-
-	// checks if we reach the required level
-	public function checkSelfLevel($aRequiredLevel);
-	
-	// checks if we possess the required module
-	public function checkSelfModule($aRequiredModule);
-
-	}
-
-class giSecurity implements iSecurity {
+class giSecurity {
 
 	/****************************/
 	/* CONFIGURATION PARAMETERS */
@@ -91,11 +59,11 @@ class giSecurity implements iSecurity {
 	// general singleton constructor
 	public function __construct() {
 		
-		// access the main database abstration singleton
-		global $giDatabase;
+		// access the main database
+		global $app;
 	
 		// class variables configuration
-		$this->configDatabase			= (object)	$giDatabase;
+		$this->configDatabase			= (object)	$app->Core->Database;
 		$this->configTableName			= (string)	'Accounts';
 		$this->configSalt				= (string)	'cc696n2babBc1307bdcF30d69dEa8ce93c1307bd7ZfIzbKsqmP8ce93c';
 		
@@ -109,7 +77,7 @@ class giSecurity implements iSecurity {
 		$this->configWaitingDelay		= (integer)	60;
 		$this->configPasswordLength		= (integer)	6;
 		
-		// user variable initialization (see class variables for comments)
+
 		$this->authId			= (integer)	0;
 		$this->authAccount		= (boolean)	false;
 		$this->authLevel		= (integer)	99;
@@ -117,6 +85,34 @@ class giSecurity implements iSecurity {
 		$this->authGranted		= (boolean)	false;
 		$this->authLogin		= (string)	'not logged in';
 		$this->authModules		= (array)	array();
+		
+		
+		// general configuration
+		$this->Database				= $app->Core->Database;
+		$this->Cookie				= 'giSecurity';
+		$this->Salt					= 'Uç!èsdH7èsb:=0)qn&hsbbWK&ç8wsNAKJQsbbQXN198nh%sll-sJ&';
+		$this->Time					= time();
+		$this->LoginField			= 'login';
+		$this->PasswordField		= 'password';
+		$this->SessionLifetime		= 72;
+		$this->WaitingDelay			= 60;
+		$this->Algorithm			= 'sha512';
+		
+		// authentication informations
+		$this->Auth 				= new stdClass();
+		$this->Auth->Id 			= null;
+		$this->Auth->Login			= null;
+		$this->Auth->Level 			= null;
+		$this->Auth->Modules		= null;
+		$this->Auth->Expiration 	= null;
+		$this->Auth->Success 		= false;
+
+		// redirection informations
+		$this->URLs					= new stdClass();
+		$this->URLs->Login			= null;
+		$this->URLs->Logout			= null;
+		$this->URLs->Home			= null;
+		$this->URLs->From			= null;
 
 	}
 
@@ -126,12 +122,17 @@ class giSecurity implements iSecurity {
 		$this->configHomeUrl			= $login_url;
 		$this->configLogoutUrl			= $logout_url;
 		
+		// configure the class
+		$this->URLs->Login				= $login_url;
+		$this->URLs->Logout				= $logout_url;
+		$this->URLs->Home				= $home_url;
+		
 	}
 
 	/******************/
 	/* PUBLIC METHODS */
 
-	public function enforceSecurity($aRequiredLevel=null,$aRequiredModule=null) {
+	public function enforce($aRequiredLevel=null,$aRequiredModule=null) {
 	
 		// if we want to login
 		if(isset($_POST[$this->configPostLogin]) and isset($_POST[$this->configPostPassword])) {

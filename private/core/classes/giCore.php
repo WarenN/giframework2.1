@@ -5,11 +5,12 @@ class giCore {
 	// store the current configuration
 	protected $Configuration;
 	protected $Environment;
-	protected $Includes;
-	protected $Runtimes;
 	protected $Controller;
+	protected $Includes;
 	protected $Version;
+	protected $Cli;
 	
+	// accessible from giController
 	public $Logger;
 	public $Response;
 	public $Router;
@@ -24,6 +25,7 @@ class giCore {
 		$this->Version = '2.1.0-alpha';
 		$this->Configuration = array();
 		$this->Include = array();
+		$this->Cli = false;
 		
 		$this->initTime();
 		$this->initPHP();
@@ -87,34 +89,6 @@ class giCore {
 			$this->Includes['cached'] = json_decode(file_get_contents('../private/data/cache/includes/core.json'),true);
 			
 		}
-		/*
-		// if the cache is available
-		if(isset($this->Includes['cached'])) {
-			// include core classes
-			foreach($this->Includes['cached']['includes']['vendor'] as $anInclude) {
-				// include the class
-				include($anInclude);	
-			}
-		}
-		// no cache file is available for includes
-		else {
-			// load all the vendor libraries
-			foreach(scandir('../private/vendor/') as $aVendorFolder) {
-				// if it's a folder
-				if(is_dir('../private/vendor/'.$aVendorFolder)) {
-					// if a generic named loader exists
-					if(file_exists('../private/vendor/'.$aVendorFolder.'/'.$aVendorFolder.'.php')) {
-						// define the include
-						$anInclude = '../private/vendor/'.$aVendorFolder.'/'.$aVendorFolder.'.php';
-						// push the include
-						$this->Includes['includes']['vendor'][] = $anInclude;
-						// actually include it
-						include($anInclude);
-					}
-				}
-			}
-		}
-		*/
 		// if the cache is available
 		if(isset($this->Includes['cached'])) {
 			// for each file to include
@@ -138,44 +112,10 @@ class giCore {
 					$aPlugin['runtime']				= array();
 					// set the plugin locales path
 					$aPlugin['locales']				= '../private/plugins/' . $aPlugin['name'] . '/locales/';
-					// set the plugin classes path
-					$aPlugin['classes']				= '../private/plugins/' . $aPlugin['name'] . '/classes/';
-					// set the plugin libraries path
-					$aPlugin['libraries']			= '../private/plugins/' . $aPlugin['name'] . '/libraries/';
 					// set the plugins configuration file path
 					$aPlugin['config']				= '../private/plugins/' . $aPlugin['name'] . '/init/config.php';
 					// set the plugins initializator file path
 					$aPlugin['routes']				= '../private/plugins/' . $aPlugin['name'] . '/init/routes.php';
-					// try to include libraries
-					if(is_dir($aPlugin['classes'])) {
-						// iterate on plugins libraries
-						foreach(scandir($aPlugin['classes']) as $aPlugin['potential_class'] ) {
-							// if the filename matches a pattern
-							if(strpos($aPlugin['potential_class'] ,'.php') and substr($aPlugin['potential_class'] ,0,1) != '.') {
-								// set the include
-								$aPlugin['an_include'] = $aPlugin['classes'].$aPlugin['potential_class'] ;
-								// push the include
-								$this->Includes['includes']['plugins'][] = $aPlugin['an_include'];
-								// include the actual class
-								include($aPlugin['an_include']);
-							}
-						}
-					}
-					// try to include classes
-					if(is_dir($aPlugin['libraries'])) {
-						// iterate on plugins libraries
-						foreach(scandir($aPlugin['libraries']) as $aPlugin['potential_library'] ) {
-							// if the filename matches a pattern
-							if(strpos($aPlugin['potential_library'] ,'.php') and substr($aPlugin['potential_library'] ,0,1) != '.') {
-								// set the include
-								$aPlugin['an_include'] = $aPlugin['libraries'].$aPlugin['potential_library'] ;
-								// push the include
-								$this->Includes['includes']['plugins'][] = $aPlugin['an_include'];
-								// include the actual library
-								include($aPlugin['an_include']);
-							}
-						}
-					}
 					// try to add locales
 					if(is_dir($aPlugin['locales'])) {
 						// iterate on plugins libraries
@@ -215,56 +155,39 @@ class giCore {
 				}
 			}
 		}
-
 		// if the includes do not come from the cache
 		if(!isset($this->Includes['cached'])) {
-			
 			// cache the includes
 			file_put_contents('../private/data/cache/includes/core.json',json_encode($this->Includes));
-			
 		}
-
-		
-	
 	}
 	
 	// actually route and execute the request
 	public function run() {
-	
 		// start caching the output
 		ob_start();
-		
 		// once everything is ready we dispatch the request to the proper controller/view/response
 		$this->Router->dispatch();
-		
 		// secure the request
 		$this->secure();
-		
 		// include the proper script in its own environment
 		$this->sandbox();
-		
 		// if no content has been set by controller/view
 		if(!$this->Response->getContent()) {
-		
 			// use gargabe collection to set the content
 			$this->Response->setContent(ob_get_clean());
-		
 		}
-		
 		// if the controller didn't already handle its own output, ask the giResponse to format it
 		$this->Response->output(); 
-		
 	}
 	
 	// apply security rules
 	private function secure() {
-	
 		// if a level is specified
-		if($this->Router->Level != null) {
+		if($this->Router->Level !== null) {
 			// enforce security
-			$this->Security->enforceSecurity($this->Router->Level,$this->Router->Module);
+			$this->Security->enforce($this->Router->Level,$this->Router->Module);
 		}
-		
 	}
 	
 	// inclusion happens here
@@ -296,10 +219,8 @@ class giCore {
 	
 	// start the execution time
 	private function initTime() {
-	
 		// set the time
 		$this->Configuration['start_time'] = microtime(true);
-		
 	}
 	
 	// initialize PHP parameters
@@ -307,7 +228,6 @@ class giCore {
 
 		// set the timezone
 		date_default_timezone_set('Europe/Paris');
-		
 		// if using FPM (fix the missing headers bug) or older version of PHP
 		if(!function_exists('getallheaders')) { 
 			// declare the getallheaders
@@ -331,7 +251,6 @@ class giCore {
 	
 	// include dependencies
 	private function initDependencies() {
-		
 		// include core classes
 		foreach(scandir('../private/core/classes/') as $aClassFile) {
 			// if we find the proper extension
@@ -344,17 +263,14 @@ class giCore {
 				include($anInclude);
 			}
 		}
-		
 	}
 	
 	// get the configuration parameters
 	private function initConfiguration() {
-	
 		// load the main configuration
 		$this->Configuration += parse_ini_file('../private/core/configuration/common.ini',true);
 		// load the environment specific configuration
 		$this->Configuration += parse_ini_file('../private/core/configuration/'.$this->Environment.'.ini',true);
-		
 	}
 	
 	// detect environment of execution
@@ -363,7 +279,7 @@ class giCore {
 		// if command line argument are present
 		if(count($_SERVER['argv']) > 0 and $_SERVER['argv'][1] and $_SERVER['argv'][2] and ($_SERVER['argv'][1] == 'local' or $_SERVER['argv'][1] == 'prod')) {
 			// set as command line
-			$this->Configuration['is_cli'] = true;
+			$this->Cli = true;
 			// set the current environment
 			$this->Environment = $_SERVER['argv'][1];
 			// set the last parameter as being the URL
@@ -372,7 +288,7 @@ class giCore {
 		// not command line
 		else {
 			// set as command line
-			$this->Configuration['is_cli'] = false;
+			$this->Cli = false;
 			// default would be prod
 			$this->Environment = 'prod';
 			// if the remote ip is a local one
@@ -401,6 +317,12 @@ class giCore {
 	public function getEnvironment() {
 		// return current environment
 		return($this->Environment);
+	}
+	
+	// allow to get the configuration
+	public function getConfiguration() {
+		// return the whole configuration
+		return($this->Configuration);	
 	}
 	
 }

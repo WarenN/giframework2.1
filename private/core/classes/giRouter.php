@@ -11,7 +11,6 @@ class giRouter {
 	protected $Headers;
 	protected $Cache;
 	protected $Debug;
-	protected $Cli;
 	protected $Runtime;
 	
 	// specific to the current route
@@ -23,6 +22,8 @@ class giRouter {
 	public $Function;
 	public $Options;
 	public $Parameters;
+	public $Level;
+	public $Module;
 	
 	// specific to the current request
 	static protected $Compression;
@@ -42,6 +43,8 @@ class giRouter {
 		$this->Controller		= null;
 		$this->Script			= null;
 		$this->Class			= null;
+		$this->Level			= null;
+		$this->Module			= null;
 		$this->Runtime			= array();
 		$this->Headers			= array();
 		$this->Routes			= array();

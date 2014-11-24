@@ -36,6 +36,23 @@ class ToolsController extends giController {
 		
 	}
 	
+	public function purgeCacheAction() {
+		
+	}
+	
+	public function purgeSessions() {
+		
+	}
+	
+	public function purgeLogs() {
+		
+		// foreach log file
+		foreach(scandir('../private/data/logs/') as $file) {
+			
+		}
+		
+	}
+	
 	// this will respond to /toolbox/installAssets/
 	public function installAssetsAction() {
 
