@@ -321,66 +321,257 @@ class giQuery {
 	
 	// shortcuts
 	public function whereStartsWith($column,$value) {
-		
+		// if provided conditions are an array
+		if(is_array($conditions)) {
+			// for each provided strict condition
+			foreach($conditions as $column => $value) {
+				// if the column name not numeric
+				if(!is_numeric($column)) {
+					// if the operator is missing
+					if(!$this->Operator) {
+						// force AND operator
+						$this->Operator = 'AND';
+					}
+					// save the condition
+					$this->Conditions[] = "{$this->Operator} ( {$column} LIKE :{$column}% )";
+					// save the value
+					$this->Values[":{$column}"] = $value;
+				}
+				// column name in a number
+				else {
+					// throw an exception
+					Throw new Exception('giQuery->whereStartsWith() : Column name cannot be a number');
+				}
+			}
+		}
 		// return self to the next method
 		return($this);
 	}
 	public function whereEndWith($column,$value) {
-		
+		// if provided conditions are an array
+		if(is_array($conditions)) {
+			// for each provided strict condition
+			foreach($conditions as $column => $value) {
+				// if the column name not numeric
+				if(!is_numeric($column)) {
+					// if the operator is missing
+					if(!$this->Operator) {
+						// force AND operator
+						$this->Operator = 'AND';
+					}
+					// save the condition
+					$this->Conditions[] = "{$this->Operator} ( {$column} LIKE %:{$column} )";
+					// save the value
+					$this->Values[":{$column}"] = $value;
+				}
+				// column name in a number
+				else {
+					// throw an exception
+					Throw new Exception('giQuery->whereEndsWith() : Column name cannot be a number');
+				}
+			}
+		}
 		// return self to the next method
 		return($this);
 	}
 	public function whereContains($column,$value) {
-		
+		// if provided conditions are an array
+		if(is_array($conditions)) {
+			// for each provided strict condition
+			foreach($conditions as $column => $value) {
+				// if the column name not numeric
+				if(!is_numeric($column)) {
+					// if the operator is missing
+					if(!$this->Operator) {
+						// force AND operator
+						$this->Operator = 'AND';
+					}
+					// save the condition
+					$this->Conditions[] = "{$this->Operator} ( {$column} LIKE %:{$column}% )";
+					// save the value
+					$this->Values[":{$column}"] = $value;
+				}
+				// column name in a number
+				else {
+					// throw an exception
+					Throw new Exception('giQuery->whereContains() : Column name cannot be a number');
+				}
+			}
+		}
 		// return self to the next method
 		return($this);
 	}
 	public function whereMatch($column,$value) {	
-		
+		// if provided conditions are an array
+		if(is_array($conditions)) {
+			// for each provided strict condition
+			foreach($conditions as $column => $value) {
+				// if the column name not numeric
+				if(!is_numeric($column)) {
+					// if the operator is missing
+					if(!$this->Operator) {
+						// force AND operator
+						$this->Operator = 'AND';
+					}
+					// save the condition
+					$this->Conditions[] = "{$this->Operator} ( MATCH {$column} AGAINST :{$column} )";
+					// save the value
+					$this->Values[":{$column}"] = $value;
+				}
+				// column name in a number
+				else {
+					// throw an exception
+					Throw new Exception('giQuery->whereMatch() : Column name cannot be a number');
+				}
+			}
+		}
 		// return self to the next method
 		return($this);
 	}
 	public function whereHigherThan($column,$value) {
-		
+		// if provided conditions are an array
+		if(is_array($conditions)) {
+			// for each provided strict condition
+			foreach($conditions as $column => $value) {
+				// if the column name not numeric
+				if(!is_numeric($column)) {
+					// if the operator is missing
+					if(!$this->Operator) {
+						// force AND operator
+						$this->Operator = 'AND';
+					}
+					// save the condition
+					$this->Conditions[] = "{$this->Operator} ( {$column} > :{$column} )";
+					// save the value
+					$this->Values[":{$column}"] = $value;
+				}
+				// column name in a number
+				else {
+					// throw an exception
+					Throw new Exception('giQuery->whereHigherThan() : Column name cannot be a number');
+				}
+			}
+		}
 		// return self to the next method
 		return($this);
 	}
 	public function whereLowerThan($column,$value) {
-		
+		// if provided conditions are an array
+		if(is_array($conditions)) {
+			// for each provided strict condition
+			foreach($conditions as $column => $value) {
+				// if the column name not numeric
+				if(!is_numeric($column)) {
+					// if the operator is missing
+					if(!$this->Operator) {
+						// force AND operator
+						$this->Operator = 'AND';
+					}
+					// save the condition
+					$this->Conditions[] = "{$this->Operator} ( {$column} < :{$column} )";
+					// save the value
+					$this->Values[":{$column}"] = $value;
+				}
+				// column name in a number
+				else {
+					// throw an exception
+					Throw new Exception('giQuery->whereLowerThan() : Column name cannot be a number');
+				}
+			}
+		}
 		// return self to the next method
 		return($this);
 	}
 	public function whereBetween($column,$lower,$higher) {
-		
-		// return self to the next method
-		return($this);
-	}
-	public function whereEmpty($column) {
-		
+		// if column is set
+		if($column and !is_numeric($column)) {
+			// if lower or higher is numeric
+			if(is_numeric($lower) and is_numeric($higher)) {
+				// save the condition
+				$this->Conditions[] = "{$this->Operator} ( {$column} BETWEEN = :min_{$column} AND :max_{$column} )";
+				// add the min value
+				$this->Values[":min_{$column}"] = $lower;
+				// add the max value
+				$this->Values[":max_{$column}"] = $higher;
+			}
+			// min and max are not numeric
+			else {
+				// throw an exception
+			Throw new Exception('giQuery->whereBetween() : Min or max values must be numbers');	
+			}
+		}
+		// column is incorrect
+		else {
+			// throw an exception
+			Throw new Exception('giQuery->whereBetween() : Column name is invalid');
+		}
 		// return self to the next method
 		return($this);
 	}
 	public function whereNull($column) {
-		
+		// if column is set
+		if($column and !is_numeric($column)) {
+			// save the condition
+			$this->Conditions[] = "{$this->Operator} ( {$column} IS NULL OR {$column} = :empty_{$column} OR {$column} = 0 )";
+			// add the empty value
+			$this->Values[":empty_{$column}"] = '';
+		}
+		// column is incorrect
+		else {
+			// throw an exception
+			Throw new Exception('giQuery->whereNull() : Column name is invalid');
+		}
 		// return self to the next method
 		return($this);
 	}
 	public function whereNotNull($column) {
-		
+		// if column is set
+		if($column and !is_numeric($column)) {
+			// save the condition
+			$this->Conditions[] = "{$this->Operator} ( length({$column}) > 0  )";
+		}
+		// column is incorrect
+		else {
+			// throw an exception
+			Throw new Exception('giQuery->whereNotNull() : Column name is invalid');
+		}
 		// return self to the next method
 		return($this);
 	}
 	public function whereTrue($column) {
-		
+		// if column is set
+		if($column and !is_numeric($column)) {
+			// save the condition
+			$this->Conditions[] = "{$this->Operator} ( {$column} = 1 OR {$column} = :{$column} )";
+			// save the value
+			$this->Values[":{$column}"] = 'true';
+		}
+		// column is incorrect
+		else {
+			// throw an exception
+			Throw new Exception('giQuery->whereTrue() : Column name is invalid');
+		}
 		// return self to the next method
 		return($this);
 	}
 	public function whereFalse($column) {
-		
+		// if column is set
+		if($column and !is_numeric($column)) {
+			// save the condition
+			$this->Conditions[] = "{$this->Operator} ( {$column} IS NULL OR {$column} = 0 OR {$column} = :{$column} OR {$column} = :empty_{$column} )";
+			// save the value
+			$this->Values[":{$column}"] = 'false';
+			// save the value
+			$this->Values[":empty_{$column}"] = '';
+		}
+		// column is incorrect
+		else {
+			// throw an exception
+			Throw new Exception('giQuery->whereTrue() : Column name is invalid');
+		}
 		// return self to the next method
 		return($this);
 	}
-	
 	// add an order clause
 	public function orderBy($columns_and_direction) {
 		// if the parameter is an array
