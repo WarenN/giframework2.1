@@ -188,13 +188,20 @@ class giHelper {
 				else {
 					$selected = '';	
 				}				
-				$select .= '<option value="'.$aListKey.'"'.$selected.'>'.giStringFor($aListValue).'</option>';	
+				$select .= '<option value="'.$aListKey.'"'.$selected.'>'.giHelper::locale($aListValue).'</option>';
 			}
-		
-		
+
+
 		}
 		$select .= '</select>';
 		return($select);
+	}
+
+	public static function locale($string) {
+		// access the app
+		global $app;
+		// return the translation
+		return($app->Localization->translate($string));
 	}
 	
 	// this function generates a password
