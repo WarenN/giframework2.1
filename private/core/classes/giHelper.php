@@ -3,7 +3,7 @@
 class giHelper {
 	
 	// truncate a string
-	public static function truncateString($string,$length) {
+	public static function truncate($string,$length) {
 		// if string is longer than authorized
 		if(strlen($string) > $length) {
 			// truncate
