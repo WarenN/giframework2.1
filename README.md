@@ -27,8 +27,8 @@ in /plugins/myplugin/controllers/mycontroller.php
 ```
 public function createAction() {
 	echo "I'm triggered by /admin/create/something/somethingelse/";	
-	echo "user in my url is ".$this->Core->Router->Parameters['user'];
-	echo "section in my url is ".$this->Core->Router->Parameters['section'];
+	echo "user in my url is ".$this->Core->Router->Parameters->User;
+	echo "section in my url is ".$this->Core->Router->Parameters->Section;
 }
 ```
 
