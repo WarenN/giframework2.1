@@ -144,7 +144,7 @@ class giHelper {
 		return($textarea);
 	}
 
-	public static function giSelect($name,$list,$value=null,$options=null) {
+	public static function select($name,$list,$value=null,$options=null) {
 		$options = giHelper::buildHtmlOptions($options);
 		$select = '<select name="'.$name.'" '.$options.'>';
 		$opt_groups = array();
