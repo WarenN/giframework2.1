@@ -3,21 +3,22 @@
 /*	
 
 CREATE TABLE "Accounts" (
-  "id" integer NULL PRIMARY KEY AUTOINCREMENT,
-  "id_level" numeric NULL,
-  "is_enabled" numeric NULL,
-  "login" text NULL,
-  "password" text NULL,
-  "account_expiration_date" numeric NULL,
-  "session_key" text NULL,
-  "session_expiration_date" numeric NULL,
-  "last_login_origin" text NULL,
-  "last_login_agent" text NULL,
-  "last_login_date" numeric NULL,
-  "last_failure_origin" numeric NULL,
-  "last_failure_agent" numeric NULL,
-  "last_failure_date" numeric NULL,
-  "rights_array" text NULL
+	"id" integer NULL PRIMARY KEY AUTOINCREMENT,
+	"id_level" numeric NULL,
+	"is_enabled" numeric NULL,
+	"login" text NULL,
+	"password" text NULL,
+	"creation_date" numeric NULL,
+	"account_expiration_date" numeric NULL,
+	"session_key" text NULL,
+	"session_expiration_date" numeric NULL,
+	"last_login_origin" text NULL,
+	"last_login_agent" text NULL,
+	"last_login_date" numeric NULL,
+	"last_failure_origin" numeric NULL,
+	"last_failure_agent" numeric NULL,
+	"last_failure_date" numeric NULL,
+	"rights_array" text NULL
 );
 
 */
