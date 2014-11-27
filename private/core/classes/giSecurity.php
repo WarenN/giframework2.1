@@ -18,7 +18,7 @@ CREATE TABLE "Accounts" (
 	"last_failure_origin" numeric NULL,
 	"last_failure_agent" numeric NULL,
 	"last_failure_date" numeric NULL,
-	"rights_array" text NULL
+	"modules_array" text NULL
 );
 
 */
@@ -177,7 +177,7 @@ class giSecurity {
 		return($this->Auth->Expiration);
 	}
 	
-	public function checkSelfLevel($level) {
+	public function checkLevel($level) {
 		// if no level
 		if(!$this->Auth->Level) {
 			// return false	
@@ -195,7 +195,7 @@ class giSecurity {
 		}
 	}
 	
-	public function checkSelfModule($module) {
+	public function checkModule($module) {
 		// if we don't have the proper module and are not admin
 		if(!in_array($module,$this->authModules) and $this->authLevel != 1) {
 			// return false
@@ -331,7 +331,7 @@ class giSecurity {
 				$this->Auth->Id			= $account->get('id');
 				$this->Auth->Login		= $account->get('login');
 				$this->Auth->Level 		= $account->get('id_level');
-				$this->Auth->Modules 	= $account->get('rights_array');
+				$this->Auth->Modules 	= $account->get('modules_array');
 				$this->Auth->Exipration	= $session_expiration_date;
 				// set session cookie
 				setcookie($this->Cookie,$session_key,$session_expiration_date,'/');
@@ -381,7 +381,7 @@ class giSecurity {
 		global $app;
 		// get potential account
 		list($account) = $app->Database->query()
-		->select('session_key','session_expiration_date','account_expiration_date','id','login','id_level','rights_array')
+		->select('session_key','session_expiration_date','account_expiration_date','id','login','id_level','modules_array')
 		->from('accounts')
 		->where(array('session_key'=>$session_key))
 		->execute();
@@ -399,7 +399,7 @@ class giSecurity {
 						$this->Auth->Id			= $account->get('id');
 						$this->Auth->Login		= $account->get('login');
 						$this->Auth->Level		= $account->get('id_level');
-						$this->Auth->Modules	= $account->get('rights_array');
+						$this->Auth->Modules	= $account->get('modules_array');
 						// if the session expires within the next 6 hours
 						if($account->getRaw('session_expiration_date') < ($this->Time + 21600) ) {
 							// extend by 36 hours

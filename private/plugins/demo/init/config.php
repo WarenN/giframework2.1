@@ -4,6 +4,6 @@
 $data = array('test'=>'sampledata');
 
 // set the runtime data
-$this->Router->setRuntime($data,'demo');
+$this->Router->setRuntime('demo',$data);
 
 ?>
