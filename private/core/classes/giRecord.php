@@ -120,7 +120,7 @@ class giRecord {
 	public function getInput($column,$options=null) {
 		return(
 			giHelper::input(
-				"{$this->Table}[$column]",
+				"{$this->_['table']}[$column]",
 				$this->get($column),
 				$options
 			)
@@ -130,7 +130,7 @@ class giRecord {
 	public function getTextarea($column,$options=null) {
 		return(
 			giHelper::textarea(
-				"{$this->Table}[$column]",
+				"{$this->_['table']}[$column]",
 				$this->get($column),
 				$options
 			)
@@ -140,7 +140,7 @@ class giRecord {
 	public function getSelect($column,$list,$options=null) {
 		return(
 			giHelper::select(
-				"{$this->Table}[$column]",
+				"{$this->_['table']}[$column]",
 				$list,
 				$this->get($column),
 				$options
@@ -152,7 +152,7 @@ class giRecord {
 		$value = $this->get($column);
 		return(
 			giHelper::selectFor(
-				"{$this->Table}[$column][$key]",
+				"{$this->_['table']}[$column][$key]",
 				$list,
 				$value[$key],
 				$options
@@ -165,7 +165,7 @@ class giRecord {
 		$value = $this->get($column);
 		return(
 			giSelect(
-				$this->Table.'['.$column.'][]',
+				$this->_['table'].'['.$column.'][]',
 				$list,
 				$value,
 				$options
@@ -179,7 +179,7 @@ class giRecord {
 			$field	= $array[$key];
 			return(
 				giCheckbox(
-					$this->Table.'['.$column.']['.$key.']',
+					$this->_['table'].'['.$column.']['.$key.']',
 					$field,
 					$options
 				)
@@ -188,7 +188,7 @@ class giRecord {
 		else {
 			return(
 				giCheckbox(
-					$this->Table.'['.$column.']',
+					$this->_['table'].'['.$column.']',
 					$this->get($column),
 					$options
 				)
