@@ -172,6 +172,11 @@ class giSecurity {
 		return($this->Auth->Level);
 	}
 	
+	public function getModules() {
+		// return directly
+		return($this->Auth->Modules);
+	}
+	
 	public function getExpiration() {
 		// return directly
 		return($this->Auth->Expiration);
