@@ -24,6 +24,20 @@ class giHelper {
 		return @round($size/pow(1024,($i=floor(log($size,1024)))),$precision).' '.$unit[$i];
 	}
 	
+	public static function formatPhone($number) {
+		// if there is no number
+		if(!$number) {
+			// nothing to return
+			return(''); 
+		}
+		// clean the number
+		$number = preg_replace("/[^0-9]/","",$number);
+		// format it
+		$number = substr($number,0,2) . ' ' . substr($number,2,2) . ' ' . substr($number,4,2) . ' ' . substr($number,6,2) . ' ' . substr($number,8,2);
+		// return it
+		return($number);	
+	}
+	
 	public static function relativeDate($time) {
 		// get current time
 		$now = time();
