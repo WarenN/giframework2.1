@@ -132,6 +132,8 @@ class giQuery {
 		if(is_array($array)) {
 			// for each column
 			foreach($array as $function_or_index => $column) {
+				// secure the column name
+				$column = $this->secure($column);
 				// if the key is numeric
 				if(is_numeric($function_or_index)) {
 					// just select the column
@@ -158,6 +160,8 @@ class giQuery {
 			foreach($columns_and_values as $column => $value) {
 				// if the column name not numeric
 				if(!is_numeric($column)) {
+					// secure the column name
+					$column = $this->secure($column);
 					// save the condition
 					$this->Updates[] = "{$column} = :{$column}";
 					// save the value (converted if necessary)
@@ -213,6 +217,8 @@ class giQuery {
 			foreach($columns_and_values as $column => $value) {
 				// if the column is not numeric
 				if(!is_numeric($column)) {
+					// secure the column name
+					$column = $this->secure($column);
 					// push the column
 					$this->Inserts[] = $column;
 					// check for automatic conversion and push in place
@@ -298,6 +304,8 @@ class giQuery {
 			foreach($conditions as $column => $value) {
 				// if the column name not numeric
 				if(!is_numeric($column)) {
+					// secure the column name
+					$column = $this->secure($column);
 					// if the operator is missing
 					if(!$this->Operator) {
 						// force AND operator
@@ -327,6 +335,8 @@ class giQuery {
 			foreach($conditions as $column => $value) {
 				// if the column name not numeric
 				if(!is_numeric($column)) {
+					// secure the column name
+					$column = $this->secure($column);
 					// if the operator is missing
 					if(!$this->Operator) {
 						// force AND operator
@@ -354,6 +364,8 @@ class giQuery {
 			foreach($conditions as $column => $value) {
 				// if the column name not numeric
 				if(!is_numeric($column)) {
+					// secure the column name
+					$column = $this->secure($column);
 					// if the operator is missing
 					if(!$this->Operator) {
 						// force AND operator
@@ -381,6 +393,8 @@ class giQuery {
 			foreach($conditions as $column => $value) {
 				// if the column name not numeric
 				if(!is_numeric($column)) {
+					// secure the column name
+					$column = $this->secure($column);
 					// if the operator is missing
 					if(!$this->Operator) {
 						// force AND operator
@@ -408,6 +422,8 @@ class giQuery {
 			foreach($conditions as $column => $value) {
 				// if the column name not numeric
 				if(!is_numeric($column)) {
+					// secure the column name
+					$column = $this->secure($column);
 					// if the operator is missing
 					if(!$this->Operator) {
 						// force AND operator
@@ -435,6 +451,8 @@ class giQuery {
 			foreach($conditions as $column => $value) {
 				// if the column name not numeric
 				if(!is_numeric($column)) {
+					// secure the column name
+					$column = $this->secure($column);
 					// if the operator is missing
 					if(!$this->Operator) {
 						// force AND operator
@@ -462,6 +480,8 @@ class giQuery {
 			foreach($conditions as $column => $value) {
 				// if the column name not numeric
 				if(!is_numeric($column)) {
+					// secure the column name
+					$column = $this->secure($column);
 					// if the operator is missing
 					if(!$this->Operator) {
 						// force AND operator
@@ -487,6 +507,8 @@ class giQuery {
 		if($column and !is_numeric($column)) {
 			// if lower or higher is numeric
 			if(is_numeric($lower) and is_numeric($higher)) {
+				// secure the column name
+				$column = $this->secure($column);
 				// save the condition
 				$this->Conditions[] = "{$this->Operator} ( {$column} BETWEEN = :min_{$column} AND :max_{$column} )";
 				// add the min value
@@ -511,6 +533,8 @@ class giQuery {
 	public function whereNull($column) {
 		// if column is set
 		if($column and !is_numeric($column)) {
+			// secure the column name
+			$column = $this->secure($column);
 			// save the condition
 			$this->Conditions[] = "{$this->Operator} ( {$column} IS NULL OR {$column} = :empty_{$column} OR {$column} = 0 )";
 			// add the empty value
@@ -527,6 +551,8 @@ class giQuery {
 	public function whereNotNull($column) {
 		// if column is set
 		if($column and !is_numeric($column)) {
+			// secure the column name
+			$column = $this->secure($column);
 			// save the condition
 			$this->Conditions[] = "{$this->Operator} ( length({$column}) > 0  )";
 		}
@@ -541,6 +567,8 @@ class giQuery {
 	public function whereTrue($column) {
 		// if column is set
 		if($column and !is_numeric($column)) {
+			// secure the column name
+			$column = $this->secure($column);
 			// save the condition
 			$this->Conditions[] = "{$this->Operator} ( {$column} = 1 OR {$column} = :{$column} )";
 			// save the value
@@ -557,6 +585,8 @@ class giQuery {
 	public function whereFalse($column) {
 		// if column is set
 		if($column and !is_numeric($column)) {
+			// secure the column name
+			$column = $this->secure($column);
 			// save the condition
 			$this->Conditions[] = "{$this->Operator} ( {$column} IS NULL OR {$column} = 0 OR {$column} = :{$column} OR {$column} = :empty_{$column} )";
 			// save the value
@@ -588,6 +618,8 @@ class giQuery {
 					// skip it as a wrong parameter has been provided	
 					continue;
 				}
+				// secure the column name
+				$column = $this->secure($column);
 				// push it
 				$this->Order[] = "{$this->Database['handle']->quote($column)} $direction";
 			}
@@ -942,6 +974,14 @@ class giQuery {
 		}
 		// return the value
 		return($value);
+	}
+	
+	// secure a column name
+	private function secure($column) {
+		// removes everything but letter and underscore
+		$column = preg_replace('/[^a-zA-Z0-9_]/', '', $yourText);	
+		// return cleaned column
+		return($column);
 	}
 
 }
