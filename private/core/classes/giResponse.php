@@ -342,7 +342,7 @@ class giResponse {
 	// put the generated output in cache for X hours
 	public function freezeFor($hours) {
 		// set the freeze time
-		$this->Freeze = intval($hours);
+		$this->Freeze = floatval($hours);
 	}
 	
 	// compress the output if it's enabled in the configuration and authorized by the browser
