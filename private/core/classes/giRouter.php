@@ -344,6 +344,20 @@ class giRouter {
 		
 	}
 
+	// if the page has been posted
+	public function isPost() {
+		// if post variable exists and is not empty
+		if(isset($_POST) and count($_POST) > 0) {
+			// return true has the request is a POST
+			return(true);
+		}
+		// its a get or somethign else
+		else {
+			// so we return false
+			return(false);	
+		}
+	}
+
 	// get headers from the browser
 	private function checkHeaders() {
 		// retrieve the headers
