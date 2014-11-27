@@ -257,6 +257,11 @@ class giResponse {
 	public function output() {
 		// compute the final execution time
 		$this->ExecutionTime = round(microtime(true) - $this->StartTime,3).' sec';
+		// if the content if anything but html
+		if($this->Type != 'html') {
+			// clean previous buffer to allow removal of headers from preAction
+			ob_get_clean(); 
+		}
 		// format the document first
 		$this->formatContent();
 		// for each header
