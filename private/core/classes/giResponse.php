@@ -549,12 +549,14 @@ class giResponse {
 		}
 		// if $this->Freeze is set
 		if($this->Freeze) {	
+			// update the caching duration
+			$this->Freeze = round($this->Freeze*3600);
 			// add a from cache header
 			$this->setHeader('X-From-Cache','true');
 			// add the date of caching
 			$this->setHeader('X-Cached-On',date('r'));
 			// tell when the cache will expire
-			$this->setHeader('X-Cached-Until',date('r',time()+intval($this->Freeze)*3600));
+			$this->setHeader('X-Cached-Until',date('r',time()+$this->Freeze));
 			// generate a signature
 			$aSignature = giRouter::getSignature();
 			// put the content in the cache
@@ -562,9 +564,9 @@ class giResponse {
 			// put the content in the cache
 			file_put_contents('../private/data/cache/response/'.$aSignature.'.json',json_encode($this->getHeaders()));
 			// set the modification time to time()+ $this->Freeze
-			touch('../private/data/cache/response/'.$aSignature.'.raw',time()+intval($this->Freeze)*3600);
+			touch('../private/data/cache/response/'.$aSignature.'.raw',time()+$this->Freeze);
 			// set the modification time to time()+ $this->Freeze
-			touch('../private/data/cache/response/'.$aSignature.'.json',time()+intval($this->Freeze)*3600);
+			touch('../private/data/cache/response/'.$aSignature.'.json',time()+$this->Freeze);
 		}	
 	}
 	
