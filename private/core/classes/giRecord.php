@@ -164,7 +164,7 @@ class giRecord {
 		$options['multiple'] = 'multiple';
 		$value = $this->get($column);
 		return(
-			giSelect(
+			giHelper::select(
 				$this->_['table'].'['.$column.'][]',
 				$list,
 				$value,
@@ -178,7 +178,7 @@ class giRecord {
 			$array	= $this->get($column);
 			$field	= $array[$key];
 			return(
-				giCheckbox(
+				giHelper::checkbox(
 					$this->_['table'].'['.$column.']['.$key.']',
 					$field,
 					$options
@@ -187,7 +187,7 @@ class giRecord {
 		}
 		else {
 			return(
-				giCheckbox(
+				giHelper::checkbox(
 					$this->_['table'].'['.$column.']',
 					$this->get($column),
 					$options

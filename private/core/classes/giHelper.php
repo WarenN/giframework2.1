@@ -157,7 +157,7 @@ class giHelper {
 					continue;	
 				}
 				$opt_groups[] = $aListKey;
-				$select .= '<optgroup label="'.giStringFor($aListKey).'">';
+				$select .= '<optgroup label="'.giHelper::locale($aListKey).'">';
 				foreach($list[$aListKey] as $aListRealKey => $aListRealValue) {
 					if(is_array($value) and in_array($aListRealKey,$value)) {
 						$selected = ' selected="selected"';
@@ -168,7 +168,7 @@ class giHelper {
 					else {
 						$selected = '';	
 					}
-					$select .= '<option value="'.$aListRealKey.'"'.$selected.'>'.giStringFor($aListRealValue).'</option>';	
+					$select .= '<option value="'.$aListRealKey.'"'.$selected.'>'.giHelper::locale($aListRealValue).'</option>';	
 				}
 				$select .= '</optgroup>';
 			}
@@ -188,20 +188,20 @@ class giHelper {
 				else {
 					$selected = '';	
 				}				
-				$select .= '<option value="'.$aListKey.'"'.$selected.'>'.giHelper::locale($aListValue).'</option>';
+				$select .= '<option value="'.$aListKey.'"'.$selected.'>'.giHelper::locale($aListValue).'</option>';	
 			}
-
-
+		
+		
 		}
 		$select .= '</select>';
 		return($select);
 	}
-
+	
 	public static function locale($string) {
 		// access the app
 		global $app;
 		// return the translation
-		return($app->Localization->translate($string));
+		return($app->Localization->translate($string));	
 	}
 	
 	// this function generates a password
