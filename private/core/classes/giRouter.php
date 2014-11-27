@@ -103,7 +103,7 @@ class giRouter {
 	}
 	
 	// set the runtime data for a specific plugin
-	public function setRuntime($data,$plugin) {
+	public function setRuntime($plugin,$data) {
 		// push in the table
 		$this->Runtime[$plugin] = $data;
 	}
