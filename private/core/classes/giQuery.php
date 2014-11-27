@@ -320,7 +320,7 @@ class giQuery {
 	}
 	
 	// shortcuts
-	public function whereStartsWith($column,$value) {
+	public function whereStartsWith($conditions) {
 		// if provided conditions are an array
 		if(is_array($conditions)) {
 			// for each provided strict condition
@@ -333,9 +333,9 @@ class giQuery {
 						$this->Operator = 'AND';
 					}
 					// save the condition
-					$this->Conditions[] = "{$this->Operator} ( {$column} LIKE :{$column}% )";
+					$this->Conditions[] = "{$this->Operator} ( {$column} LIKE :{$column} )";
 					// save the value
-					$this->Values[":{$column}"] = $value;
+					$this->Values[":{$column}"] = "{$value}%";
 				}
 				// column name in a number
 				else {
@@ -347,7 +347,7 @@ class giQuery {
 		// return self to the next method
 		return($this);
 	}
-	public function whereEndWith($column,$value) {
+	public function whereEndsWith($conditions) {
 		// if provided conditions are an array
 		if(is_array($conditions)) {
 			// for each provided strict condition
@@ -360,9 +360,9 @@ class giQuery {
 						$this->Operator = 'AND';
 					}
 					// save the condition
-					$this->Conditions[] = "{$this->Operator} ( {$column} LIKE %:{$column} )";
+					$this->Conditions[] = "{$this->Operator} ( {$column} LIKE :{$column} )";
 					// save the value
-					$this->Values[":{$column}"] = $value;
+					$this->Values[":{$column}"] = "%$value";
 				}
 				// column name in a number
 				else {
@@ -374,7 +374,7 @@ class giQuery {
 		// return self to the next method
 		return($this);
 	}
-	public function whereContains($column,$value) {
+	public function whereContains($conditions) {
 		// if provided conditions are an array
 		if(is_array($conditions)) {
 			// for each provided strict condition
@@ -387,9 +387,9 @@ class giQuery {
 						$this->Operator = 'AND';
 					}
 					// save the condition
-					$this->Conditions[] = "{$this->Operator} ( {$column} LIKE %:{$column}% )";
+					$this->Conditions[] = "{$this->Operator} ( {$column} LIKE :{$column} )";
 					// save the value
-					$this->Values[":{$column}"] = $value;
+					$this->Values[":{$column}"] = "%{$value}%";
 				}
 				// column name in a number
 				else {
@@ -401,7 +401,7 @@ class giQuery {
 		// return self to the next method
 		return($this);
 	}
-	public function whereMatch($column,$value) {	
+	public function whereMatch($conditions) {	
 		// if provided conditions are an array
 		if(is_array($conditions)) {
 			// for each provided strict condition
@@ -428,7 +428,7 @@ class giQuery {
 		// return self to the next method
 		return($this);
 	}
-	public function whereHigherThan($column,$value) {
+	public function whereHigherThan($conditions) {
 		// if provided conditions are an array
 		if(is_array($conditions)) {
 			// for each provided strict condition
@@ -455,7 +455,7 @@ class giQuery {
 		// return self to the next method
 		return($this);
 	}
-	public function whereLowerThan($column,$value) {
+	public function whereLowerThan($conditions) {
 		// if provided conditions are an array
 		if(is_array($conditions)) {
 			// for each provided strict condition
