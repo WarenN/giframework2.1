@@ -979,7 +979,7 @@ class giQuery {
 	// secure a column name
 	private function secure($column) {
 		// removes everything but letter and underscore
-		$column = preg_replace('/[^a-zA-Z0-9_]/', '', $yourText);	
+		$column = preg_replace('/[^a-zA-Z0-9_]/', '', $column);	
 		// return cleaned column
 		return($column);
 	}
