@@ -130,7 +130,7 @@ class giSecurity {
 		// if a specific level is required
 		if($level) {
 			// check the level
-			if(!$this->checkSelfLevel($level)) {
+			if(!$this->checkLevel($level)) {
 				// access the logger
 				global $app;
 				// log this
@@ -144,7 +144,7 @@ class giSecurity {
 		// if a specific module is required
 		if($module) {
 			// check the level
-			if(!$this->checkSelfModule($module)) {
+			if(!$this->checkModule($module)) {
 				// access the logger
 				global $app;
 				// log this
