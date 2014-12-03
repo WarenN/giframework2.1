@@ -189,7 +189,7 @@ class giSecurity {
 			return(false);
 		}
 		// if we reach the level
-		if($this->Auth->level <= $level) {
+		if($this->Auth->Level <= $level) {
 			// return false
 			return(true);
 		}
@@ -200,9 +200,9 @@ class giSecurity {
 		}
 	}
 	
-	public function checkModule($module) {
+	public function checkModule($module,$level=1) {
 		// if we don't have the proper module and are not admin
-		if(!in_array($module,$this->authModules) and $this->authLevel != 1) {
+		if(!in_array($module,$this->Auth->Modules) and $this->Auth->Level > $level) {
 			// return false
 			return(false);
 		}
