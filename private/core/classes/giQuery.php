@@ -621,7 +621,7 @@ class giQuery {
 				// secure the column name
 				$column = $this->secure($column);
 				// push it
-				$this->Order[] = "{$this->Database['handle']->quote($column)} $direction";
+				$this->Order[] = "{$column} $direction";
 			}
 		}
 		// return self to the next method
