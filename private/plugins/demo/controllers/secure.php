@@ -5,7 +5,7 @@ class SecureController extends giController {
 	
 	// this will respond to /demo/
 	public function indexAction() {
-	
+		$this->Core->Response->setContent('hello');
 	}
 	
 	public function defaultAction() {

@@ -184,7 +184,7 @@ class giSecurity {
 	
 	public function checkLevel($level) {
 		// if no level
-		if(!$this->Auth->Level) {
+		if($this->Auth->Level == null) {
 			// return false	
 			return(false);
 		}
@@ -327,6 +327,11 @@ class giSecurity {
 			}
 			// if the password matchs
 			if($account->get('password') == $this->getChecksum($password)) {
+				// if the user level is 0
+				if($account->get('id_level') == '0') {
+					// output a 403 header
+					$app->Response->error403('level_0_is_not_supported');
+				}
 				// generate session expiration date
 				$session_expiration_date= $this->Time + ($this->SessionLifetime * 3600);
 				// generate session signature
