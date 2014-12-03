@@ -22,6 +22,7 @@ class giQuery {
 	protected	$Conditions;
 	protected	$Updates;
 	protected	$Inserts;
+	protected	$Groups;
 	protected	$Order;
 	protected	$Limit;
 
@@ -253,20 +254,24 @@ class giQuery {
 			// set the table
 			$this->Table = $this->Database['handle']->quote($table);	
 		}
+		// wrong type
+		else {
+			// those actions being incompatible we throw an exception
+			Throw new Exception("giQuery->from() : Wrong parameter type, string expected");
+		}
 		// return self to the next method
 		return($this);
 	}
 	
-	// select another table to join on
-	public function join($table_and_id) {
+	// select another table to join on (implicit INNER JOIN)
+	public function join($table,$match,$against) {
 		// if table_and_id is an array
-		if(is_array($table_and_id)) {
-			// for each table/column
-			foreach($table_and_id as $table => $column) {
-				// do something
-				// ------------	
-			}
+		if(!is_string($table) or !$table or !is_string($match) or !$match or !is_string($against) or !$against) {
+			// those actions being incompatible we throw an exception
+			Throw new Exception("giQuery->join() : Wrong parameter");
 		}
+		// push the join condition
+		$this->Joins[] = "JOIN {$this->secure($table)} ON $this->secure($match) = $this->secure($against)";
 		// return self to the next method
 		return($this);
 	}
@@ -628,6 +633,22 @@ class giQuery {
 		return($this);
 	}
 	
+	// add a group clause
+	public function groupBy($columns) {
+		// if the parameter is an array
+		if(is_array($columns)) {
+			// for each given parameter
+			foreach($columns as $column) {
+				// secure the column name
+				$column = $this->secure($column);
+				// push it
+				$this->Groups[] = $column;
+			}
+		}
+		// return self to the next method
+		return($this);
+	}
+	
 	// add a limit clause
 	public function limitTo($from,$until) {
 		// if both parameters are numric
@@ -730,7 +751,13 @@ class giQuery {
 			// prepare the update query
 			$this->Query = "UPDATE $this->Table SET $this->Updates";
 		}
-		
+		// if the select has joined tables
+		if($this->Action == 'SELECT' and count($this->Joins)) {
+			// assemble the joinds
+			$this->Joins = implode(' ',$this->Joins);
+			// assemble the query
+			$this->Query .= " $this->Joins";
+		}
 		// if the action needs conditions
 		if($this->Action == 'SELECT' or $this->Action == 'UPDATE' or $this->Action == 'DELETE') {
 			// if conditions are provided
@@ -740,6 +767,13 @@ class giQuery {
 				// assemble the query
 				$this->Query .= " WHERE $this->Conditions";
 			}
+		}
+		// if groupings options are set
+		if($this->Action == 'SELECT' and count($this->Groups)) {
+			// assemble groups
+			$this->Groups = implode(' , ',$this->Groups);
+			// assemble query
+			$this->Query .= " GROUP BY $this->Groups";
 		}
 		// if ordering options are set
 		if($this->Action == 'SELECT' and count($this->Order)) {
@@ -979,7 +1013,7 @@ class giQuery {
 	// secure a column name
 	private function secure($column) {
 		// removes everything but letter and underscore
-		$column = preg_replace('/[^a-zA-Z0-9_]/', '', $column);	
+		$column = preg_replace('/[^a-zA-Z0-9_\.]/', '', $column);	
 		// return cleaned column
 		return($column);
 	}
