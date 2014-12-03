@@ -141,8 +141,6 @@ class giCore {
 						// include
 						include($aPlugin['config']);
 					}
-					// set the plugins runtime environnement
-					$this->Runtime[$aPluginConfiguration['name']] = $aPlugin['runtime'];
 					// try to include the initializator file
 					if(file_exists($aPlugin['routes'])) {
 						// push the include
