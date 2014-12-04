@@ -1,6 +1,6 @@
 <?php
 
-class giFileUploader {
+class giUploader {
 
 	protected $originalFile;
 	protected $originalFullPath;

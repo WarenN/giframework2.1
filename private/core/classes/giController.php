@@ -1,4 +1,15 @@
 <?php
+/**
+ * PHP Version 5
+ * @package giFramework
+ * @link https://github.com/AnnoyingTechnology/giframework2.1
+ * @author Julien Arnaud (AnnoyingTechnology) <e10ad5d4ab72523920e7cbe55ba6c91c@gribouille.eu@gribouille.eu>
+ * @copyright 2015 - 2015 Julien Arnaud
+ * @license http://www.gnu.org/licenses/lgpl.txt GNU General Public License
+ * @note This program is distributed in the hope that it will be useful - WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 class giController {
 	
