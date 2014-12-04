@@ -1,17 +1,89 @@
 <?php
+/**
+ * PHP Version 5
+ * @package giFramework
+ * @link https://github.com/AnnoyingTechnology/giframework2.1
+ * @author Julien Arnaud (AnnoyingTechnology) <e10ad5d4ab72523920e7cbe55ba6c91c@gribouille.eu@gribouille.eu>
+ * @copyright 2015 - 2015 Julien Arnaud
+ * @license http://www.gnu.org/licenses/lgpl.txt GNU General Public License
+ * @note This program is distributed in the hope that it will be useful - WITHOUT
+ * uses http://php.net/manual/en/book.fileinfo.php
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.
+ */
 
 class giThumbnail {
-	
-	protected $sourceImageFile;		// original file path
-	protected $destinationImageFile;// sized image file path
-	protected $sourceImageName;		// original file name
-	protected $sourceImageType;		// original file type
-	protected $sourceImageWidth;	// original file width
-	protected $sourceImageHeight;	// original file height
-	protected $loadedImage;			// working copy of the image
 
-	protected $desiredDimension;	// desired dimensions of thumbnails
-	protected $desiredQuality;		// quality of the generated jpg
+	// source image
+	protected	$Source;
+	// destination of thumbnail
+	protected	$Destination;
+	// type of the image
+	protected	$Type;
+	// size of the image
+	protected	$Size;
+	// quality of the generated thumbnail
+	protected	$Quality;
+	// limitations on the size of the image
+	protected	$Limits;
+	// list of errors
+	protected	$Errors;
+
+	public function __contruct() {
+		
+		// set the default constraints
+		$this->Limits = new stdClass();
+		$this->Limits->Width = 320;
+		$this->Limits->Height = 320;
+		// set defautl quality
+		$this->Quality = null;
+			
+	}
+	
+	// set the source image path
+	public function source($path) {
+	
+	}
+	
+	// set the destination of the thumbnail
+	public function destination($path) {
+		
+	}
+	
+	// limit the width of the picture
+	public function limitWidth($pixels) {
+		
+	}
+	
+	// limits height of the picture
+	public function limitHeight($pixels) {
+		
+	}
+	
+	// sets a maximum for both width and height
+	public function limitBoth($pixels) {
+		
+	}
+	
+	// limit the quality
+	public function limitQuality($quality) {
+		
+	}
+	
+	// actually generated the thumbnail
+	public function execute() {
+		
+	}
+	
+	// retrieve informations about all that happened
+	public function infos() {
+		
+	}
+}
+
+/*
+class giThumbnail {
+	
 
 	public function __construct($sourceImageFile,$destinationImageFile,$desiredDimension,$desiredQuality=50) {
 		$this->sourceImageFile		= (string)	$sourceImageFile;
@@ -177,5 +249,5 @@ class giThumbnail {
 	}
 
 }
-
+*/
 ?>
